@@ -19,7 +19,7 @@ package org.gradle.internal.filewatch;
 import org.gradle.api.Action;
 import org.gradle.api.internal.file.FileSystemSubset;
 import org.gradle.initialization.BuildCancellationToken;
-import org.gradle.internal.UncheckedException;
+import org.gradle.util.SingleMessageLogger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -140,15 +140,20 @@ class DefaultFileSystemChangeWaiter implements FileSystemChangeWaiter {
             }
             Throwable throwable = error.get();
             if (throwable != null) {
-                throw throwable;
+                cancelGracefully(throwable);
             }
         } catch (Throwable e) {
-            throw UncheckedException.throwAsUncheckedException(e);
+            cancelGracefully(e);
         } finally {
             detachEventListener();
             cancellationToken.removeCallback(cancellationHandler);
             watcher.stop();
         }
+    }
+
+    private void cancelGracefully(Throwable e) {
+        SingleMessageLogger.nagUserWith("Exiting continuous build due to exception: " + e.getMessage());
+        cancellationToken.cancel();
     }
 
     private boolean waitingForChanges(long lastChangeAtValue) {
