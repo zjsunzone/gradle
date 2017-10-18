@@ -33,7 +33,7 @@ public interface ConfigurationInternal extends ResolveContext, Configuration, De
 
     Path getIdentityPath();
 
-    void triggerWhenEmptyActionsIfNecessary();
+    void triggerDependencyActions();
 
     void markAsObserved(InternalState requestedState);
 
