@@ -15,10 +15,19 @@
  */
 package org.gradle.api.artifacts;
 
+import org.gradle.api.Incubating;
+
 /**
  * <p>A {@code ModuleDependency} is a {@link Dependency} on a module outside the current project hierarchy.</p>
  */
 public interface ExternalModuleDependency extends ExternalDependency {
+    /**
+     * Sets the version of this dependency.
+     * @since 4.4
+     */
+    @Incubating
+    void setVersion(String version);
+
     /**
      * Returns whether or not Gradle should always check for a change in the remote repository.
      *
