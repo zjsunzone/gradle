@@ -16,14 +16,19 @@
 
 package org.gradle.api.internal.artifacts;
 
+import org.gradle.api.artifacts.ModuleVersionConstraint;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ModuleVersionSelector;
+
+import javax.annotation.Nullable;
 
 public class DefaultModuleVersionSelector implements ModuleVersionSelector {
 
     private String group;
     private String name;
     private String version;
+    private ModuleVersionConstraint prefersVersion;
+    private ModuleVersionConstraint acceptsVersion;
 
     public DefaultModuleVersionSelector(String group, String name, String version) {
         this.group = group;
@@ -51,6 +56,18 @@ public class DefaultModuleVersionSelector implements ModuleVersionSelector {
 
     public String getVersion() {
         return version;
+    }
+
+    @Nullable
+    @Override
+    public ModuleVersionConstraint getPreferredVersion() {
+        return prefersVersion;
+    }
+
+    @Nullable
+    @Override
+    public ModuleVersionConstraint getAcceptedVersion() {
+        return acceptsVersion;
     }
 
     public boolean matchesStrictly(ModuleVersionIdentifier identifier) {
@@ -97,6 +114,14 @@ public class DefaultModuleVersionSelector implements ModuleVersionSelector {
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (version != null ? version.hashCode() : 0);
         return result;
+    }
+
+    public void setPrefersVersion(ModuleVersionConstraint prefersVersion) {
+        this.prefersVersion = prefersVersion;
+    }
+
+    public void setAcceptsVersion(ModuleVersionConstraint acceptsVersion) {
+        this.acceptsVersion = acceptsVersion;
     }
 
     public static ModuleVersionSelector newSelector(String group, String name, String version) {

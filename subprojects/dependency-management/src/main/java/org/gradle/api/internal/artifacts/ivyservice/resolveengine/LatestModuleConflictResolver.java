@@ -15,9 +15,11 @@
  */
 package org.gradle.api.internal.artifacts.ivyservice.resolveengine;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.Version;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionComparator;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionParser;
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionSelector;
 import org.gradle.internal.component.model.ComponentResolveMetadata;
 
 import java.util.*;
@@ -34,15 +36,32 @@ class LatestModuleConflictResolver implements ModuleConflictResolver {
         // Find the candidates with the highest base version
         Version baseVersion = null;
         Map<Version, T> matches = new LinkedHashMap<Version, T>();
-        for (T candidate : details.getCandidates()) {
+        Collection<? extends T> candidates = details.getCandidates();
+        for (T candidate : candidates) {
             Version version = VersionParser.INSTANCE.transform(candidate.getVersion());
             if (baseVersion == null || versionComparator.compare(version.getBaseVersion(), baseVersion) > 0) {
-                matches.clear();
-                baseVersion = version.getBaseVersion();
-                matches.put(version, candidate);
+                boolean accept = true;
+                for (T t : candidates) {
+                    if (t != candidate) {
+                        VersionSelector acceptedVersionSelector = t.getAcceptedVersionSelector();
+                        if (acceptedVersionSelector != null && !acceptedVersionSelector.accept(version)) {
+                            accept = false;
+                            break;
+                        }
+                    }
+                }
+                if (accept) {
+                    matches.clear();
+                    baseVersion = version.getBaseVersion();
+                    matches.put(version, candidate);
+                }
             } else if (version.getBaseVersion().equals(baseVersion)) {
                 matches.put(version, candidate);
             }
+        }
+        if (matches.isEmpty()) {
+            details.fail(new GradleException("Bad luck"));
+            return;
         }
 
         if (matches.size() == 1) {

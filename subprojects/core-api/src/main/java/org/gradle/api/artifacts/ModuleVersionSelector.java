@@ -18,6 +18,8 @@ package org.gradle.api.artifacts;
 
 import org.gradle.api.Incubating;
 
+import javax.annotation.Nullable;
+
 /**
  * Selects a module version
  */
@@ -43,6 +45,12 @@ public interface ModuleVersionSelector {
      * @return module version
      */
     String getVersion();
+
+    @Nullable
+    ModuleVersionConstraint getPreferredVersion();
+
+    @Nullable
+    ModuleVersionConstraint getAcceptedVersion();
 
     /**
      * To match strictly means that the given identifier needs to have

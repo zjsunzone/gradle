@@ -36,4 +36,8 @@ public interface ExternalDependency extends ModuleDependency, ModuleVersionSelec
      * {@inheritDoc}
      */
     ExternalDependency copy();
+
+    ExternalDependency prefers(String version);
+
+    ExternalDependency accepts(String version);
 }

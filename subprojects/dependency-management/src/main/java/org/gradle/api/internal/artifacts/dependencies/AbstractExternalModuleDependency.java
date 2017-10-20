@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,19 @@
  */
 package org.gradle.api.internal.artifacts.dependencies;
 
+import org.apache.commons.lang.StringUtils;
 import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.artifacts.ComponentMetadata;
+import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.ModuleVersionConstraint;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.internal.artifacts.ModuleVersionConstraintInternal;
 import org.gradle.api.internal.artifacts.ModuleVersionSelectorStrictSpec;
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionSelector;
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionSelectorScheme;
+
+import javax.annotation.Nullable;
 
 public abstract class AbstractExternalModuleDependency extends AbstractModuleDependency implements ExternalModuleDependency {
     private String group;
@@ -26,6 +35,8 @@ public abstract class AbstractExternalModuleDependency extends AbstractModuleDep
     private String version;
     private boolean changing;
     private boolean force;
+    private ModuleVersionConstraint prefersVersion;
+    private ModuleVersionConstraint acceptsVersion;
 
     public AbstractExternalModuleDependency(String group, String name, String version, String configuration) {
         super(configuration);
@@ -35,6 +46,9 @@ public abstract class AbstractExternalModuleDependency extends AbstractModuleDep
         this.group = group;
         this.name = name;
         this.version = version;
+        if (StringUtils.isNotEmpty(version)) {
+            prefers(version);
+        }
     }
 
     protected void copyTo(AbstractExternalModuleDependency target) {
@@ -84,5 +98,53 @@ public abstract class AbstractExternalModuleDependency extends AbstractModuleDep
         validateMutation(this.changing, changing);
         this.changing = changing;
         return this;
+    }
+
+    @Nullable
+    @Override
+    public ModuleVersionConstraint getPreferredVersion() {
+        return prefersVersion;
+    }
+
+    @Nullable
+    @Override
+    public ModuleVersionConstraint getAcceptedVersion() {
+        return acceptsVersion;
+    }
+
+    @Override
+    public ExternalDependency prefers(final String version) {
+        if (this.version == null) {
+            this.version = version;
+        }
+        prefersVersion = new DefaultModuleVersionConstraint(version);
+        return this;
+    }
+
+    @Override
+    public ExternalDependency accepts(final String version) {
+        acceptsVersion = new DefaultModuleVersionConstraint(version);
+        return this;
+    }
+
+    private static class DefaultModuleVersionConstraint implements ModuleVersionConstraintInternal {
+        private final String version;
+
+        private VersionSelector versionSelector;
+
+        private DefaultModuleVersionConstraint(String version) {
+            this.version = version;
+        }
+
+        @Override
+        public VersionSelector toVersionSelector(VersionSelectorScheme versionSelectorScheme) {
+            versionSelector = versionSelectorScheme.parseSelector(version);
+            return versionSelector;
+        }
+
+        @Override
+        public boolean isSatisfiedBy(ComponentMetadata element) {
+            return versionSelector.accept(element);
+        }
     }
 }

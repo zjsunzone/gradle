@@ -368,7 +368,7 @@ public class DependencyGraphBuilder {
         boolean atLeastOneAgrees = false;
         for (SelectorState selectorState : allSelectors) {
             if (filter.apply(selectorState)) {
-                VersionSelector candidateSelector = selectorState.getVersionSelector();
+                VersionSelector candidateSelector = selectorState.getPreferredVersionSelector();
                 if (candidateSelector == null || !candidateSelector.canShortCircuitWhenVersionAlreadyPreselected() || !candidateSelector.accept(version)) {
                     return false;
                 }
