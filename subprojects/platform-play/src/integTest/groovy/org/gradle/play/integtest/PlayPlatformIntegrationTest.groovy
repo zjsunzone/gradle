@@ -109,13 +109,14 @@ model {
         "play: '2.6.5', scala: '2.12'" | '2.6.5'     | '2.12'
     }
 
-    def "fails when trying to build a Play 2.6.x application with Scala 2.10.x"() {
+    @Unroll
+    def "fails when trying to build a Play #playVersion application with Scala #scalaVersion"() {
         when:
         buildFile << """
 model {
     components {
         play {
-            platform play: '2.6.5', scala: '2.10'
+            platform play: '${playVersion}', scala: '${scalaVersion}'
         }
     }
 }
@@ -124,27 +125,12 @@ model {
         fails "assemble"
 
         and:
-        failure.assertHasCause "Play versions 2.6.x are not compatible with Scala platform 2.10. Compatible Scala platforms are [2.12, 2.11]."
-    }
+        failure.assertHasCause message
 
-
-    def "fails when trying to build a Play 2.2.x application with Scala 2.11.x"() {
-        when:
-        buildFile << """
-model {
-    components {
-        play {
-            platform play: '2.2.4', scala: '2.11'
-        }
-    }
-}
-"""
-
-        then:
-        fails "assemble"
-
-        and:
-        failure.assertHasCause "Play versions 2.2.x are not compatible with Scala platform 2.11. Compatible Scala platforms are [2.10]."
+        where:
+        playVersion | scalaVersion | message
+        '2.6.5'     | '2.10'       | "Play versions 2.6.x are not compatible with Scala platform 2.10. Compatible Scala platforms are [2.12, 2.11]."
+        '2.2.4'     | '2.11'       | "Play versions 2.2.x are not compatible with Scala platform 2.11. Compatible Scala platforms are [2.10]."
     }
 
     def "fails when trying to build for an unsupported play platform"() {
