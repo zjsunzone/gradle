@@ -15,6 +15,7 @@
  */
 package org.gradle.tooling.internal.consumer.loader;
 
+import org.gradle.api.JavaVersion;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.internal.Factory;
 import org.gradle.internal.classloader.FilteringClassLoader;
@@ -35,9 +36,9 @@ import org.gradle.tooling.internal.consumer.connection.CancellableConsumerConnec
 import org.gradle.tooling.internal.consumer.connection.ConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.DeprecatedVersionConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.ModelBuilderBackedConsumerConnection;
-import org.gradle.tooling.internal.consumer.connection.ParameterAcceptingConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.NoToolingApiConnection;
 import org.gradle.tooling.internal.consumer.connection.NonCancellableConsumerConnectionAdapter;
+import org.gradle.tooling.internal.consumer.connection.ParameterAcceptingConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.ParameterValidatingConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.ShutdownAwareConsumerConnection;
 import org.gradle.tooling.internal.consumer.connection.TestExecutionConsumerConnection;
@@ -127,6 +128,8 @@ public class DefaultToolingImplementationLoader implements ToolingImplementation
         LOGGER.debug("Using tooling provider classpath: {}", implementationClasspath);
         FilteringClassLoader.Spec filterSpec = new FilteringClassLoader.Spec();
         filterSpec.allowPackage("org.gradle.tooling.internal.protocol");
+        // https://github.com/gradle/gradle/issues/3317
+        filterSpec.allowClass(JavaVersion.class);
         FilteringClassLoader filteringClassLoader = new FilteringClassLoader(classLoader, filterSpec);
         return new VisitableURLClassLoader(filteringClassLoader, implementationClasspath);
     }
