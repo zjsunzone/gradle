@@ -49,17 +49,6 @@ public class DefaultHeaderDependenciesCollector implements HeaderDependenciesCol
         return ImmutableSortedSet.copyOf(headerDependencies);
     }
 
-    @Override
-    public ImmutableSortedSet<File> collectExistingHeaderDependencies(String taskName, List<File> includeRoots, IncrementalCompilation incrementalCompilation) {
-        final Set<File> headerDependencies = new HashSet<File>();
-        if (incrementalCompilation.isMacroIncludeUsedInSources()) {
-            addIncludeRoots(taskName, includeRoots, headerDependencies);
-        } else {
-            headerDependencies.addAll(incrementalCompilation.getExistingHeaders());
-        }
-        return ImmutableSortedSet.copyOf(headerDependencies);
-    }
-
     private void addIncludeRoots(String taskName, List<File> includeRoots, final Set<File> headerDependencies) {
         logger.info("After parsing the source files, Gradle cannot calculate the exact set of include files for {}. Every file in the include search path will be considered a header dependency.", taskName);
         for (final File includeRoot : includeRoots) {

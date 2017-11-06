@@ -15,6 +15,8 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
+import com.google.common.collect.SetMultimap;
+
 import java.io.File;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +33,7 @@ public interface IncrementalCompilation {
      */
     Set<File> getDiscoveredInputs();
 
-    Set<File> getExistingHeaders();
+    SetMultimap<String, File> getExistingHeaders();
 
     boolean isMacroIncludeUsedInSources();
 }

@@ -15,6 +15,8 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
+import com.google.common.collect.SetMultimap;
+
 import java.io.File;
 import java.util.List;
 import java.util.Set;
@@ -24,10 +26,10 @@ public class DefaultIncrementalCompilation implements IncrementalCompilation {
     private final List<File> recompile;
     private final List<File> removed;
     private final Set<File> discoveredInputs;
-    private final Set<File> existingHeaders;
+    private final SetMultimap<String, File> existingHeaders;
 
     private final boolean macroIncludesUsedInSources;
-    public DefaultIncrementalCompilation(CompilationState finalState, List<File> recompile, List<File> removed, Set<File> discoveredInputs, Set<File> existingHeaders, boolean macroIncludesUsedInSources) {
+    public DefaultIncrementalCompilation(CompilationState finalState, List<File> recompile, List<File> removed, Set<File> discoveredInputs, SetMultimap<String, File> existingHeaders, boolean macroIncludesUsedInSources) {
         this.finalState = finalState;
         this.recompile = recompile;
         this.removed = removed;
@@ -57,7 +59,7 @@ public class DefaultIncrementalCompilation implements IncrementalCompilation {
     }
 
     @Override
-    public Set<File> getExistingHeaders() {
+    public SetMultimap<String, File> getExistingHeaders() {
         return existingHeaders;
     }
 

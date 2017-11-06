@@ -16,7 +16,9 @@
 
 package org.gradle.language.nativeplatform.internal.incremental;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.HashCode;
@@ -62,7 +64,7 @@ public class IncrementalCompileFilesFactory {
         private final Map<File, Boolean> processed = new HashMap<File, Boolean>();
         private final List<File> toRecompile = new ArrayList<File>();
         private final Set<File> discoveredInputs = Sets.newHashSet();
-        private final Set<File> existingHeaders = Sets.newHashSet();
+        private final SetMultimap<String, File> existingHeaders = HashMultimap.create();
 
         private boolean sourceFilesUseMacroIncludes;
 
@@ -111,7 +113,7 @@ public class IncrementalCompileFilesFactory {
                     sourceFilesUseMacroIncludes = true;
                 }
                 if (!resolvedInclude.isUnknown()) {
-                    existingHeaders.add(resolvedInclude.getFile());
+                    existingHeaders.put(resolvedInclude.getInclude(), resolvedInclude.getFile());
                 }
             }
             discoveredInputs.addAll(resolutionResult.getCheckedLocations());
@@ -172,7 +174,7 @@ public class IncrementalCompileFilesFactory {
         }
 
         @Override
-        public Set<File> getExistingHeaders() {
+        public SetMultimap<String, File> getExistingHeaders() {
             return existingHeaders;
         }
 

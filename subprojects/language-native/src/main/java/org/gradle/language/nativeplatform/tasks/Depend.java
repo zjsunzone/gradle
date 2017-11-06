@@ -17,13 +17,19 @@
 package org.gradle.language.nativeplatform.tasks;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.SetMultimap;
+import com.google.gson.Gson;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.EmptyFileVisitor;
+import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.internal.changedetection.changes.IncrementalTaskInputsInternal;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
@@ -36,7 +42,9 @@ import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs;
 import org.gradle.cache.PersistentStateCache;
+import org.gradle.internal.file.FileMetadataSnapshot;
 import org.gradle.internal.hash.FileHasher;
+import org.gradle.internal.hash.HashCode;
 import org.gradle.language.nativeplatform.internal.incremental.CompilationState;
 import org.gradle.language.nativeplatform.internal.incremental.CompilationStateCacheFactory;
 import org.gradle.language.nativeplatform.internal.incremental.DefaultHeaderDependenciesCollector;
@@ -55,8 +63,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -71,6 +81,7 @@ public class Depend extends DefaultTask {
     private final ConfigurableFileCollection includes;
     private final ConfigurableFileCollection source;
     private final HeaderDependenciesCollector headerDependenciesCollector;
+    private final DirectoryFileTreeFactory directoryFileTreeFactory;
     private ImmutableList<String> includePaths;
     private Property<Boolean> importsAreIncludes;
     private final RegularFileProperty headerDependenciesFile;
@@ -89,7 +100,8 @@ public class Depend extends DefaultTask {
         this.headerDependenciesFile = newOutputFile();
         ObjectFactory objectFactory = getProject().getObjects();
         this.importsAreIncludes = objectFactory.property(Boolean.class);
-        this.headerDependenciesCollector = new DefaultHeaderDependenciesCollector(directoryFileTreeFactory);
+        this.directoryFileTreeFactory = directoryFileTreeFactory;
+        this.headerDependenciesCollector = new DefaultHeaderDependenciesCollector(this.directoryFileTreeFactory);
         dependsOn(includes);
     }
 
@@ -101,21 +113,45 @@ public class Depend extends DefaultTask {
         IncrementalCompileProcessor incrementalCompileProcessor = createIncrementalCompileProcessor(includeRoots, compileStateCache);
 
         IncrementalCompilation incrementalCompilation = incrementalCompileProcessor.processSourceFiles(source.getFiles());
-        ImmutableSortedSet<File> headerDependencies = headerDependenciesCollector.collectHeaderDependencies(getName(), includeRoots, incrementalCompilation);
-        ImmutableSortedSet<File> existingHeaderDependencies = headerDependenciesCollector.collectExistingHeaderDependencies(getName(), includeRoots, incrementalCompilation);
-        compileStateCache.set(incrementalCompilation.getFinalState());
+        CompilationState finalState = incrementalCompilation.getFinalState();
+        compileStateCache.set(finalState);
 
-        inputs.newInputs(headerDependencies);
-        writeHeaderDependenciesFile(existingHeaderDependencies);
+        if (incrementalCompilation.isMacroIncludeUsedInSources()) {
+            final SetMultimap<String, File> allIncludes = HashMultimap.create();
+            for (final File includeRoot : includeRoots) {
+                directoryFileTreeFactory.create(includeRoot).visit(new EmptyFileVisitor() {
+                    @Override
+                    public void visitFile(FileVisitDetails fileDetails) {
+                        allIncludes.put(fileDetails.getRelativePath().getPathString(), fileDetails.getFile());
+                    }
+                });
+            }
+            inputs.newInputs(allIncludes.values());
+            writeHeaderDependenciesFile(allIncludes, hasher);
+        } else {
+            SetMultimap<String, File> existingHeaders = incrementalCompilation.getExistingHeaders();
+            ImmutableSortedSet<File> headerDependencies = headerDependenciesCollector.collectHeaderDependencies(getName(), includeRoots, incrementalCompilation);
+            inputs.newInputs(headerDependencies);
+            writeHeaderDependenciesFile(existingHeaders, new CompilationStateBackedFileHasher(finalState));
+        }
+
     }
 
-    private void writeHeaderDependenciesFile(ImmutableSortedSet<File> headerDependencies) throws IOException {
+    private void writeHeaderDependenciesFile(SetMultimap<String, File> headerDependencies, FileHasher hasher) throws IOException {
         File outputFile = getHeaderDependenciesFile().getAsFile().get();
         final BufferedWriter outputStreamWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), Charsets.UTF_8));
         try {
-            for (File header : headerDependencies) {
-                outputStreamWriter.write(header.getAbsolutePath());
-                outputStreamWriter.newLine();
+            Gson gson = new Gson();
+
+            for (Map.Entry<String, Collection<File>> entry : headerDependencies.asMap().entrySet()) {
+                String include = entry.getKey();
+                Collection<File> headers = entry.getValue();
+                File[] sortedHeaders = headers.toArray(new File[] {});
+                Arrays.sort(sortedHeaders);
+                for (File header : sortedHeaders) {
+                    outputStreamWriter.write(gson.toJson(new HeaderDependency(include, hasher.hash(header).toString())));
+                    outputStreamWriter.newLine();
+                }
             }
         } finally {
             IOUtils.closeQuietly(outputStreamWriter);
@@ -127,6 +163,30 @@ public class Depend extends DefaultTask {
         DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots);
         IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, hasher);
         return new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
+    }
+
+    private static class CompilationStateBackedFileHasher implements FileHasher {
+
+        private final CompilationState compilationState;
+
+        public CompilationStateBackedFileHasher(CompilationState compilationState) {
+            this.compilationState = compilationState;
+        }
+
+        @Override
+        public HashCode hash(File file) {
+            return compilationState.getState(file).getHash();
+        }
+
+        @Override
+        public HashCode hash(FileTreeElement fileDetails) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public HashCode hash(File file, FileMetadataSnapshot fileDetails) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Input
@@ -165,13 +225,38 @@ public class Depend extends DefaultTask {
         source.from(sourceFiles);
     }
 
+    /**
+     * File to write header dependencies to.
+     */
     @OutputFile
     public RegularFileProperty getHeaderDependenciesFile() {
         return headerDependenciesFile;
     }
 
+    /**
+     * Whether imports are considered includes.
+     */
     @Input
     public Property<Boolean> getImportsAreIncludes() {
         return importsAreIncludes;
     }
+
+    private static class HeaderDependency {
+        private final String include;
+        private final String hash;
+
+        public String getInclude() {
+            return include;
+        }
+
+        public String getHash() {
+            return hash;
+        }
+
+        public HeaderDependency(String include, String hash) {
+            this.include = include;
+            this.hash = hash;
+        }
+    }
+
 }
