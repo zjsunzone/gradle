@@ -43,9 +43,9 @@ public enum JavaVersion {
      *
      * @param value An object whose toString() value is to be converted. May be null.
      * @return The version, or null if the provided value is null.
-     * @throws IllegalArgumentException when the provided value cannot be converted.
+     * @throws UnknownJavaVersionException when the provided value cannot be converted.
      */
-    public static JavaVersion toVersion(Object value) throws IllegalArgumentException {
+    public static JavaVersion toVersion(Object value) throws UnknownJavaVersionException {
         if (value == null) {
             return null;
         }
@@ -69,7 +69,7 @@ public enum JavaVersion {
                 return values()[versionIdx];
             }
         }
-        throw new IllegalArgumentException(String.format("Could not determine java version from '%s'.", name));
+        throw new UnknownJavaVersionException(String.format("Could not determine java version from '%s'.", name));
     }
 
     /**
@@ -94,12 +94,12 @@ public enum JavaVersion {
         if (index >= 0 && index < values().length) {
             return values()[index];
         }
-        throw new IllegalArgumentException(String.format("Could not determine java version from '%d'.", classVersion));
+        throw new UnknownJavaVersionException(String.format("Could not determine java version from '%d'.", classVersion));
     }
 
     public static JavaVersion forClass(byte[] classData) {
         if (classData.length < 8) {
-            throw new IllegalArgumentException("Invalid class format. Should contain at least 8 bytes");
+            throw new UnknownJavaVersionException("Invalid class format. Should contain at least 8 bytes");
         }
         return forClassVersion(classData[7] & 0xFF);
     }
@@ -164,5 +164,17 @@ public enum JavaVersion {
 
     public String getMajorVersion() {
         return majorVersion;
+    }
+
+    /**
+     * Thrown when encountering unknown java version schema.
+     *
+     * @since 4.4
+     */
+    @Incubating
+    public static class UnknownJavaVersionException extends IllegalArgumentException {
+        UnknownJavaVersionException(String message) {
+            super(message);
+        }
     }
 }

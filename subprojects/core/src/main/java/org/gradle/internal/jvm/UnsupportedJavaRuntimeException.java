@@ -33,14 +33,15 @@ public class UnsupportedJavaRuntimeException extends GradleException {
     }
 
     public static void javaDeprecationWarning() {
-        if (!JavaVersion.current().isJava8Compatible()) {
+        JavaVersion current = getCurrentVersionSafely();
+        if (current != null && !current.isJava8Compatible()) {
             DeprecationLogger.nagUserWith(JAVA7_DEPRECATION_WARNING_DOC);
         }
     }
 
     public static void assertUsingVersion(String component, JavaVersion minVersion) throws UnsupportedJavaRuntimeException {
-        JavaVersion current = JavaVersion.current();
-        if (current.compareTo(minVersion) >= 0) {
+        JavaVersion current = getCurrentVersionSafely();
+        if (current == null || current.compareTo(minVersion) >= 0) {
             return;
         }
         throw new UnsupportedJavaRuntimeException(String.format("%s %s requires Java %s or later to run. You are currently using Java %s.", component, GradleVersion.current().getVersion(),
@@ -53,5 +54,14 @@ public class UnsupportedJavaRuntimeException extends GradleException {
         }
         throw new UnsupportedJavaRuntimeException(String.format("%s %s requires Java %s or later to run. Your build is currently configured to use Java %s.", component, GradleVersion.current().getVersion(),
             minVersion.getMajorVersion(), configuredVersion.getMajorVersion()));
+    }
+
+    private static JavaVersion getCurrentVersionSafely() {
+        try {
+            return JavaVersion.current();
+        } catch (JavaVersion.UnknownJavaVersionException e) {
+            DeprecationLogger.nagUserWith(e.getMessage());
+            return null;
+        }
     }
 }
