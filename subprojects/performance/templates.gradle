@@ -258,7 +258,7 @@ task bigCppApp(type: CppMultiProjectGeneratorTask) {
 
 task smallCppMulti(type: CppMultiProjectGeneratorTask) {
     projects = 11
-    sourceFiles = 2
+    sourceFiles = 20
     templateArgs = [
         functionCount: 1
     ]
@@ -267,7 +267,7 @@ task smallCppMulti(type: CppMultiProjectGeneratorTask) {
 
 task mediumCppMulti(type: CppMultiProjectGeneratorTask) {
     projects = 101
-    sourceFiles = 4
+    sourceFiles = 100
     templateArgs = [
         functionCount: 2
     ]
@@ -276,7 +276,7 @@ task mediumCppMulti(type: CppMultiProjectGeneratorTask) {
 
 task mediumCppMultiWithMacroIncludes(type: CppMultiProjectGeneratorTask) {
     projects = 101
-    sourceFiles = 4
+    sourceFiles = 100
     templateArgs = [
         functionCount: 2,
         useMacroIncludes: true
@@ -286,7 +286,7 @@ task mediumCppMultiWithMacroIncludes(type: CppMultiProjectGeneratorTask) {
 
 task bigCppMulti(type: CppMultiProjectGeneratorTask) {
     projects = 201
-    sourceFiles = 8
+    sourceFiles = 500
     templateArgs = [
         functionCount: 3
     ]
