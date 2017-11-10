@@ -98,7 +98,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         }
 
         void resolved(String rawInclude, File resolved) {
-            File dependencyFile = resolved == null ? null : FileUtils.canonicalize(resolved);
+            File dependencyFile = resolved == null ? null : resolved.toPath().normalize().toFile();
             dependencies.add(ResolvedInclude.create(rawInclude, dependencyFile));
         }
 
