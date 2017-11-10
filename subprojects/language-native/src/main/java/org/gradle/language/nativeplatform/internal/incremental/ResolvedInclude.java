@@ -23,10 +23,10 @@ import java.io.File;
 public class ResolvedInclude {
     private final String include;
     private final File dependencyFile;
-    private static final Interner<ResolvedInclude> interner = Interners.newWeakInterner();
+    private static final Interner<ResolvedInclude> INTERNER = Interners.newWeakInterner();
 
     public static ResolvedInclude create(String include, File dependencyFile) {
-        return interner.intern(new ResolvedInclude(include, dependencyFile));
+        return INTERNER.intern(new ResolvedInclude(include, dependencyFile));
     }
 
     public ResolvedInclude(String include, File dependencyFile) {

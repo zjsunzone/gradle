@@ -25,10 +25,10 @@ public class DefaultInclude implements Include {
     private final String value;
     private final boolean isImport;
     private final IncludeType type;
-    private static final Interner<DefaultInclude> interner = Interners.newWeakInterner();
+    private static final Interner<DefaultInclude> INTERNER = Interners.newWeakInterner();
 
     public static DefaultInclude create(String value, boolean isImport, IncludeType type) {
-        return interner.intern(new DefaultInclude(value, isImport, type));
+        return INTERNER.intern(new DefaultInclude(value, isImport, type));
     }
 
     public DefaultInclude(String value, boolean isImport, IncludeType type) {
