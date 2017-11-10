@@ -180,7 +180,7 @@ Gradle has been upgraded to embed Ant 1.9.9 over Ant 1.9.6.
 
 ### Avoid checking other repositories when dependency resolution in one repository fails with HTTP status code in the 500 range
 
-The HTTP status codes 500-511 can be considered unrecoverable server states. Gradle will explicitly rethrow exceptions which occur in dependency resolution instead of quietly continue to the next repository similar to timeout issues introduced in Gradle 4.3.
+The HTTP status codes 5xx can be considered unrecoverable server states. Gradle will explicitly rethrow exceptions which occur in dependency resolution instead of quietly continue to the next repository similar to timeout issues introduced in Gradle 4.3.
 
 ### The type of `pluginManagement.repositories` changed
 
@@ -196,6 +196,7 @@ We would like to thank the following community members for making contributions 
 
 - [Lucas Smaira](https://github.com/lsmaira) - Support parametrized Tooling model builders (gradle/gradle#2729)
 - [Kyle Moore](https://github.com/DPUkyle) - Updated Gosu plugin to fix API breakage (gradle/gradle#3115)
+- [Kyle Moore](https://github.com/DPUkyle) - Filter non-file URLs when getting classpath from `ClassLoader` (gradle/gradle#3224)
 - [Jaci Brunning](https://github.com/JacisNonsense) - Support for overriding target platforms on Gcc toolchains (gradle/gradle#3124)
 
 We love getting contributions from the Gradle community. For information on contributing, please see [gradle.org/contribute](https://gradle.org/contribute).
