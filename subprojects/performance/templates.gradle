@@ -285,8 +285,10 @@ task mediumCppMultiWithMacroIncludes(type: CppMultiProjectGeneratorTask) {
 }
 
 task bigCppMulti(type: CppMultiProjectGeneratorTask) {
+    // NOTE: Number of source files also increases the number of headers
+    // 200 projects x 200 source files per project ~ 13GB in _sources_
     projects = 201
-    sourceFiles = 500
+    sourceFiles = 100 
     templateArgs = [
         functionCount: 3
     ]
