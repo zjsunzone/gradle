@@ -54,9 +54,9 @@ class NativeBuildPerformanceTest extends AbstractCrossVersionPerformanceTest {
         "mediumCppAppWithMacroIncludes"   | '256m'    | null
         "bigCppApp"                       | '256m'    | null
         "smallCppMulti"                   | '256m'    | 40
-        "mediumCppMulti"                  | '256m'    | null
-        "mediumCppMultiWithMacroIncludes" | '256m'    | null
-        "bigCppMulti"                     | '1g'      | null
+        "mediumCppMulti"                  | '1g'      | null
+        "mediumCppMultiWithMacroIncludes" | '1g'      | null
+        // "bigCppMulti"                     | '1g'      | null
     }
 
     def "clean assemble on manyProjectsNative"() {
@@ -89,7 +89,7 @@ class NativeBuildPerformanceTest extends AbstractCrossVersionPerformanceTest {
         where:
         testProject   | maxMemory
         "bigCppApp"   | '256m'
-        "bigCppMulti" | '1g'
+        // "bigCppMulti" | '1g'
     }
 
     @Unroll
@@ -110,8 +110,8 @@ class NativeBuildPerformanceTest extends AbstractCrossVersionPerformanceTest {
         testProject   | maxMemory | fileToChange
         "bigCppApp"   | '256m'    | 'src/main/cpp/lib250.cpp'
         "bigCppApp"   | '256m'    | 'src/main/headers/lib250.h'
-        "bigCppMulti" | '1g'      | 'project101/src/main/cpp/project101lib4.cpp'
-        "bigCppMulti" | '1g'      | 'project101/src/main/public/project101lib4.h'
+        // "bigCppMulti" | '1g'      | 'project101/src/main/cpp/project101lib4.cpp'
+        // "bigCppMulti" | '1g'      | 'project101/src/main/public/project101lib4.h'
         changeType = fileToChange.endsWith('.h') ? 'header' : 'source'
     }
 
