@@ -15,6 +15,9 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
+import com.google.common.base.Objects;
+
+import javax.annotation.Nullable;
 import java.io.File;
 
 public class ResolvedInclude {
@@ -30,30 +33,11 @@ public class ResolvedInclude {
         return dependencyFile == null;
     }
 
-    public boolean isMaybeMacro() {
-        // TODO: Someone could be evil and include a file called "validIdentifier"
-        return isUnknown() && isMacro(include);
-    }
-
-    private static boolean isMacro(String token) {
-        if (token.isEmpty()
-            || !Character.isJavaIdentifierStart(token.charAt(0))) {
-            return false;
-        }
-        if (token.length() > 1) {
-            for (char c : token.substring(1).toCharArray()) {
-                if (!Character.isJavaIdentifierPart(c)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     public String getInclude() {
         return include;
     }
 
+    @Nullable
     public File getFile() {
         return dependencyFile;
     }
@@ -72,8 +56,7 @@ public class ResolvedInclude {
         if (!include.equals(that.include)) {
             return false;
         }
-        return !(dependencyFile != null ? !dependencyFile.equals(that.dependencyFile) : that.dependencyFile != null);
-
+        return Objects.equal(dependencyFile, that.dependencyFile);
     }
 
     @Override
