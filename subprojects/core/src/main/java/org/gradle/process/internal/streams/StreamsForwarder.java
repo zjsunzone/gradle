@@ -16,6 +16,7 @@
 
 package org.gradle.process.internal.streams;
 
+import org.gradle.internal.concurrent.DefaultExecutorFactory;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.ManagedExecutor;
 import org.gradle.internal.operations.BuildOperationIdentifierPreservingRunnable;
@@ -24,6 +25,9 @@ import org.gradle.util.DisconnectableInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintWriter;
 
 public class StreamsForwarder implements StreamsHandler {
 
@@ -53,11 +57,11 @@ public class StreamsForwarder implements StreamsHandler {
         InputStream instr = new DisconnectableInputStream(input);
 
         standardOutputRunner = new ExecOutputHandleRunner("read standard output of: " + processName,
-                process.getInputStream(), standardOutput);
+            process.getInputStream(), standardOutput);
         errorOutputRunner = new ExecOutputHandleRunner("read error output of: " + processName, process.getErrorStream(),
-                errorOutput);
+            errorOutput);
         standardInputRunner = new ExecOutputHandleRunner("write standard input into: " + processName,
-                instr, process.getOutputStream());
+            instr, process.getOutputStream());
 
         this.executor = executorFactory.create("Forward streams with process: " + processName);
     }
@@ -81,5 +85,49 @@ public class StreamsForwarder implements StreamsHandler {
             throw new RuntimeException(e);
         }
         executor.stop();
+    }
+
+    public static void main(String[] args) throws IOException {
+        String script = "/Users/zhb/echo.sh";
+        PrintWriter writer = new PrintWriter(script);
+        writer.println("while true\ndo\nread a\necho $a\ndone");
+        writer.close();
+
+
+        PipedOutputStream os = new PipedOutputStream();
+        PipedInputStream is = new PipedInputStream(os);
+
+        Process process = new ProcessBuilder("/bin/bash", script).start();
+        StreamsForwarder forwarder = new StreamsForwarder(new BlackHoleOutputStream(), null, is, false);
+
+        forwarder.connectStreams(process, "echo", new DefaultExecutorFactory());
+        forwarder.start();
+
+        os.write((int) 'a');
+        os.flush();
+
+        sleep(1000);
+
+        os.write((int) 'a');
+        os.flush();
+
+        is.close();
+
+        sleep(1000);
+    }
+
+    private static void sleep(long mills) {
+        try {
+            Thread.sleep(mills);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static class BlackHoleOutputStream extends OutputStream {
+        @Override
+        public void write(int b) throws IOException {
+            sleep(100);
+        }
     }
 }
