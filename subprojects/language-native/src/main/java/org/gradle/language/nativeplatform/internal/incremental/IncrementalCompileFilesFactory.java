@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class IncrementalCompileFilesFactory {
 
@@ -54,6 +55,29 @@ public class IncrementalCompileFilesFactory {
         return new DefaultIncementalCompileSourceProcessor(previousCompileState);
     }
 
+    static class Counter {
+        final Map<File, AtomicInteger> files = new HashMap<File, AtomicInteger>();
+
+        void add(File file) {
+            AtomicInteger count = files.get(file);
+            if (count == null) {
+                count = new AtomicInteger();
+                files.put(file, count);
+            }
+            count.incrementAndGet();
+        }
+
+        void report() {
+            System.out.println("files: " + files.size());
+            int total = 0;
+            for (AtomicInteger count : files.values()) {
+                total += count.get();
+            }
+            System.out.println("visits: " + total);
+            System.out.println("average: " + (files.size() > 0 ? ((float)total / files.size()) : "-"));
+        }
+    }
+
     private class DefaultIncementalCompileSourceProcessor implements IncementalCompileSourceProcessor {
         private final CompilationState previous;
         private final BuildableCompilationState current = new BuildableCompilationState();
@@ -64,12 +88,24 @@ public class IncrementalCompileFilesFactory {
         private final Map<File, FileVisitResult> filesWithNoMacroIncludes = new HashMap<File, FileVisitResult>();
         private boolean hasUnresolvedHeaders;
 
+        final Counter files = new Counter();
+        final Counter filesWithoutMacroIncludes = new Counter();
+        final Counter filesWithUnresolvedIncludes = new Counter();
+
         DefaultIncementalCompileSourceProcessor(CompilationState previousCompileState) {
             this.previous = previousCompileState == null ? new CompilationState() : previousCompileState;
         }
 
         @Override
         public IncrementalCompilation getResult() {
+            System.out.println("SOURCE FILES");
+            System.out.println("files: " + current.getSourceInputs().size());
+            System.out.println("ALL FILES");
+            files.report();
+            System.out.println("FILES WITHOUT MACRO INCLUDES");
+            filesWithoutMacroIncludes.report();
+            System.out.println("FILES WITH UNRESOLVED INCLUDES");
+            filesWithUnresolvedIncludes.report();
             return new DefaultIncrementalCompilation(current.snapshot(), toRecompile, getRemovedSources(), discoveredInputs, existingHeaders, hasUnresolvedHeaders, includeDirectivesMap);
         }
 
@@ -115,6 +151,8 @@ public class IncrementalCompileFilesFactory {
                 return new FileVisitResult();
             }
 
+            files.add(file);
+
             FileSnapshot fileSnapshot = snapshotter.snapshotSelf(file);
             HashCode newHash = fileSnapshot.getContent().getContentMd5();
             IncludeDirectives includeDirectives = sourceIncludesParser.parseIncludes(file);
@@ -146,6 +184,13 @@ public class IncrementalCompileFilesFactory {
                     includedFileStates.addAll(includeVisitResult.includeFileStates);
                     includedFileDirectives.addAll(includeVisitResult.includeFileDirectives);
                 }
+            }
+
+            if (result == IncludeFileResolutionResult.NoMacroIncludes) {
+                filesWithoutMacroIncludes.add(file);
+            }
+            if (result == IncludeFileResolutionResult.UnresolvedMacroIncludes) {
+                filesWithUnresolvedIncludes.add(file);
             }
 
             FileVisitResult visitResult = new FileVisitResult(result, includedFileStates, includedFileDirectives);
