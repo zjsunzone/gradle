@@ -28,6 +28,9 @@ public class DefaultProjectPathRegistry implements ProjectPathRegistry {
     private final Map<Path, ProjectComponentIdentifier> allProjects = Maps.newLinkedHashMap();
 
     void add(Path projectIdentityPath, ProjectComponentIdentifier identifier) {
+        if (allProjects.containsKey(projectIdentityPath)) {
+            throw new IllegalArgumentException(String.format("Project with path '%s' already exists.", projectIdentityPath.getPath()));
+        }
         allProjects.put(projectIdentityPath, identifier);
     }
 
