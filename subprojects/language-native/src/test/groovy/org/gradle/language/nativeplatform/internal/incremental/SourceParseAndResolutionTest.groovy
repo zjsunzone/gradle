@@ -194,7 +194,7 @@ class SourceParseAndResolutionTest extends SerializerSpec {
         """
 
         expect:
-        doesNotResolve('#include HEADER##_NAME')
+        doesNotResolve('#include HEADER ## _NAME')
     }
 
     def "does not resolve include with multiple tokens"() {
@@ -677,7 +677,7 @@ class SourceParseAndResolutionTest extends SerializerSpec {
         resolve() == [header1, header2, header3, header4]
     }
 
-    def "can produce a macro function call by returning function arg that is sequence of expressions"() {
+    def "can produce a macro function call by returning function arg that expands to function call"() {
         given:
         sourceFile << """
             #define FUNC2(X) X
@@ -690,7 +690,7 @@ class SourceParseAndResolutionTest extends SerializerSpec {
         resolve() == [header]
     }
 
-    def "can produce a macro function call by returning function arg that is sequence of macros that expand to functions"() {
+    def "can produce a macro function call by returning function arg that expands to chain of function calls"() {
         given:
         sourceFile << """
             #define FUNC1(X) X
@@ -701,6 +701,21 @@ class SourceParseAndResolutionTest extends SerializerSpec {
             #define HEADER(X) HEADER_(FUNC1 FUNC2 X)
             
             #include HEADER(ARGS) // replaced by FUNC1 FUNC2 ("hello.h") then FUNC1 ("hello.h")
+        """
+
+        expect:
+        resolve() == [header]
+    }
+
+    def "can produce a macro function call by returning function arg that uses macro to supply arguments"() {
+        given:
+        sourceFile << """
+            #define FUNC2(X) X
+            #define ARGS ("hello.h")
+            
+            #define HEADER(X) FUNC2 X
+            
+            #include HEADER(ARGS)
         """
 
         expect:

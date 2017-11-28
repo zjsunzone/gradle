@@ -89,7 +89,7 @@ class RegexBackedCSourceParserTest extends Specification {
     }
 
     Include include(String value, boolean isImport = false) {
-        def expression = RegexBackedCSourceParser.parseExpression(value)
+        def expression = RegexBackedCSourceParser.parseIncludeExpression(value)
         return IncludeWithSimpleExpression.create(expression, isImport)
     }
 
@@ -806,6 +806,29 @@ st3"
         '( x ## y )'       | [expression('x ## y')]
     }
 
+    def "finds object-like macro directive whose value is a sequence of expressions"() {
+        when:
+        sourceFile << """
+#define SOME_STRING ${value}
+"""
+
+        then:
+        macros == [macro('SOME_STRING', IncludeType.EXPRESSIONS, null, params)]
+        macroFunctions.empty
+
+        where:
+        value               | params
+        'a b'               | [token('a'), token('b')]
+        'a("a.h") b(<b.h>)' | [expression('a("a.h")'), expression('b(<b.h>)')]
+        '() ()'             | [tokens('()'), tokens('()')]
+        'a ## b c ## d'     | [tokens('a##b'), tokens('c##d')]
+        '? ? ?'             | [token('?'), token('?'), token('?')]
+        'a++'               | [token('a'), token('+'), token('+')]
+        '- 12'              | [token('-'), token('12')]
+        'a - 12'            | [token('a'), token('-'), token('12')]
+        '(X) # X'           | [tokens('(X)'), token('#'), token('X')]
+    }
+
     def "finds object-like macro directive whose body is a token"() {
         when:
         sourceFile << """
@@ -831,26 +854,19 @@ st3"
 
         where:
         value << [
-            "one two three",
-            "a++",
-            "-12",
-            "(X) #X",
-            "a(b) c(d)",
             "A(12)##@",
             "A##",
-            'A##@',
+            "A  ##\t",
             '##B',
-            'x ## y a ## b',
+            'A##@',
+            '@##A',
+            '## a()',
             'a(b()',
-            'a(()) more',
             'a(  ,',
             '(',
             '( A',
             '( A ##',
-            '( A ## b',
-            '() ()',
-            '(a) (b)',
-            '~ ?'
+            '( A ## b'
         ]
     }
 
@@ -921,7 +937,7 @@ st3"
 #define OTHER "1234"
 #define EMPTY
 #define FUNCTION abc(a, b, c)
-#define UNKNOWN abc 123
+#define UNKNOWN ("
 """
 
         then:
@@ -1055,8 +1071,6 @@ st3"
         definition << [
             'A(abc',
             'A(abc , ',
-            'a(b) c(d)',
-            '"a12" 12 + 4',
             'x##',
             'a##~',
             'a##(b)',
@@ -1187,7 +1201,10 @@ st3"
         macroFunctions == [unresolvedMacroFunction('A', 2)]
 
         where:
-        body << ['Defined("a.h)', 'A(B(C, (D()))', '"abc" 12 + 5', 'A##~']
+        body << [
+            'Defined("a.h)',
+            'A(B(C, (D()))',
+            'A##~']
     }
 
     def "finds function-like macro directive with multiple parameters whose body is empty"() {

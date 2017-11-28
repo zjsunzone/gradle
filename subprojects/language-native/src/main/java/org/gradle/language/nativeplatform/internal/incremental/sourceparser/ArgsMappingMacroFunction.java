@@ -86,7 +86,7 @@ class ArgsMappingMacroFunction extends AbstractMacroFunction {
                 currentMapPos = mapInto(arg, arguments, currentMapPos, mappedArgs);
             }
             mapped.add(new ComplexExpression(expression.getType(), expression.getValue(), mappedArgs));
-        } else if (type == IncludeType.MACRO_FUNCTION) {
+        } else if (type != IncludeType.TOKEN_CONCATENATION && type != IncludeType.EXPAND_TOKEN_CONCATENATION) {
             // Macro expand parameter
             mapped.add(arguments.get(replaceWith).asMacroExpansion());
         } else {
