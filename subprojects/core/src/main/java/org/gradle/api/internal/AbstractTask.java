@@ -28,22 +28,16 @@ import org.gradle.api.Describable;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.TemporaryFileProvider;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.tasks.ClassLoaderAwareTaskAction;
 import org.gradle.api.internal.tasks.ContextAwareTaskAction;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
-import org.gradle.api.internal.tasks.DefaultTaskDestroyables;
-import org.gradle.api.internal.tasks.DefaultTaskInputs;
-import org.gradle.api.internal.tasks.DefaultTaskLocalState;
-import org.gradle.api.internal.tasks.DefaultTaskOutputs;
 import org.gradle.api.internal.tasks.InputsAwareTaskDependency;
 import org.gradle.api.internal.tasks.TaskContainerInternal;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
 import org.gradle.api.internal.tasks.TaskExecuter;
 import org.gradle.api.internal.tasks.TaskExecutionContext;
-import org.gradle.api.internal.tasks.TaskLocalStateInternal;
 import org.gradle.api.internal.tasks.TaskMutator;
 import org.gradle.api.internal.tasks.TaskStateInternal;
 import org.gradle.api.internal.tasks.execution.DefaultTaskExecutionContext;
@@ -127,14 +121,11 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
     private boolean impliesSubProjects;
     private boolean hasCustomActions;
 
-    private final TaskInputsInternal taskInputs;
-    private final TaskOutputsInternal taskOutputs;
-    private final TaskDestroyables taskDestroyables;
-    private final TaskLocalStateInternal taskLocalState;
     private final Class<? extends Task> publicType;
     private LoggingManagerInternal loggingManager;
 
     private String toStringValue;
+    private ChangeDetection changeDetection;
 
     protected AbstractTask() {
         this(taskInfo());
@@ -161,14 +152,10 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
         shouldRunAfter = new DefaultTaskDependency(tasks);
         services = project.getServices();
 
-        FileResolver fileResolver = project.getFileResolver();
         taskMutator = new TaskMutator(this);
-        taskInputs = new DefaultTaskInputs(fileResolver, this, taskMutator);
-        taskOutputs = new DefaultTaskOutputs(fileResolver, this, taskMutator);
-        taskDestroyables = new DefaultTaskDestroyables(fileResolver, this, taskMutator);
-        taskLocalState = new DefaultTaskLocalState(fileResolver, this, taskMutator);
+        changeDetection = new ChangeDetection(this, project.getFileResolver(), taskMutator);
 
-        dependencies = new InputsAwareTaskDependency(taskInputs, tasks);
+        dependencies = new InputsAwareTaskDependency(changeDetection.getTaskInputs(), tasks);
     }
 
     private void assertDynamicObject() {
@@ -550,22 +537,22 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
 
     @Override
     public TaskInputsInternal getInputs() {
-        return taskInputs;
+        return changeDetection.getTaskInputs();
     }
 
     @Override
     public TaskOutputsInternal getOutputs() {
-        return taskOutputs;
+        return changeDetection.getTaskOutputs();
     }
 
     @Override
     public TaskDestroyables getDestroyables() {
-        return taskDestroyables;
+        return changeDetection.getTaskDestroyables();
     }
 
     @Override
     public TaskLocalState getLocalState() {
-        return taskLocalState;
+        return changeDetection.getTaskLocalState();
     }
 
     @Internal
