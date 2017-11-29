@@ -16,13 +16,17 @@
 
 package org.gradle.language.nativeplatform.internal;
 
-import org.gradle.api.internal.changedetection.changes.DiscoveredInputRecorder;
 import org.gradle.internal.operations.logging.BuildOperationLogger;
 import org.gradle.nativeplatform.internal.AbstractBinaryToolSpec;
 import org.gradle.nativeplatform.toolchain.internal.NativeCompileSpec;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractNativeCompileSpec extends AbstractBinaryToolSpec implements NativeCompileSpec {
 
@@ -40,7 +44,6 @@ public abstract class AbstractNativeCompileSpec extends AbstractBinaryToolSpec i
     private File preCompiledHeaderObjectFile;
     private Map<File, IncludeDirectives> sourceFileIncludeDirectives;
     private String preCompiledHeader;
-    private DiscoveredInputRecorder discoveredInputRecorder;
 
     @Override
     public List<File> getIncludeRoots() {
@@ -213,15 +216,5 @@ public abstract class AbstractNativeCompileSpec extends AbstractBinaryToolSpec i
     @Override
     public void setSourceFileIncludeDirectives(Map<File, IncludeDirectives> map) {
         this.sourceFileIncludeDirectives = map;
-    }
-
-    @Override
-    public void setDiscoveredInputRecorder(DiscoveredInputRecorder inputs) {
-        this.discoveredInputRecorder = inputs;
-    }
-
-    @Override
-    public DiscoveredInputRecorder getDiscoveredInputRecorder() {
-        return discoveredInputRecorder;
     }
 }

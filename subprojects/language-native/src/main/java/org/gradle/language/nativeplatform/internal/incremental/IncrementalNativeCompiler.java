@@ -15,10 +15,8 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
-import com.google.common.collect.ImmutableSortedSet;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.internal.TaskInternal;
-import org.gradle.api.internal.changedetection.changes.DiscoveredInputRecorder;
 import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.WorkResults;
@@ -30,8 +28,6 @@ import org.gradle.nativeplatform.toolchain.Clang;
 import org.gradle.nativeplatform.toolchain.Gcc;
 import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.internal.NativeCompileSpec;
-
-import java.io.File;
 
 @NonNullApi
 public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements Compiler<T> {
@@ -63,8 +59,6 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
 
         spec.setSourceFileIncludeDirectives(compilation.getSourceFileIncludeDirectives());
 
-        handleDiscoveredInputs(spec, compilation, spec.getDiscoveredInputRecorder());
-
         WorkResult workResult;
         if (spec.isIncrementalCompile()) {
             workResult = doIncrementalCompile(compilation, spec);
@@ -81,11 +75,6 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
         DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, importsAreIncludes);
         DefaultSourceIncludesResolver includesResolver = new DefaultSourceIncludesResolver(spec.getIncludeRoots());
         return new IncrementalCompileFilesFactory(sourceIncludesParser, includesResolver, fileSystemSnapshotter);
-    }
-
-    protected void handleDiscoveredInputs(T spec, IncrementalCompilation compilation, final DiscoveredInputRecorder discoveredInputRecorder) {
-        ImmutableSortedSet<File> headerDependencies = headerDependenciesCollector.collectHeaderDependencies(getTask().getPath(), spec.getIncludeRoots(), compilation);
-        discoveredInputRecorder.newInputs(headerDependencies);
     }
 
     protected WorkResult doIncrementalCompile(IncrementalCompilation compilation, T spec) {

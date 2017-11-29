@@ -106,6 +106,5 @@ public class DependPlugin implements Plugin<Project> {
                 return Clang.class.isAssignableFrom(toolChain.getClass()) || Gcc.class.isAssignableFrom(toolChain.getClass());
             }
         }));
-        compile.getHeaderDependenciesFile().set(depend.getHeaderDependenciesFile());
     }
 }

@@ -90,8 +90,4 @@ public interface NativeCompileSpec extends BinaryToolSpec {
     Map<File, IncludeDirectives> getSourceFileIncludeDirectives();
 
     void setSourceFileIncludeDirectives(Map<File, IncludeDirectives> map);
-
-    DiscoveredInputRecorder getDiscoveredInputRecorder();
-
-    void setDiscoveredInputRecorder(DiscoveredInputRecorder inputs);
 }
