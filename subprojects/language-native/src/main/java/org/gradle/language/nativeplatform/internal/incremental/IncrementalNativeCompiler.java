@@ -17,64 +17,41 @@ package org.gradle.language.nativeplatform.internal.incremental;
 
 import org.gradle.api.NonNullApi;
 import org.gradle.api.internal.TaskInternal;
-import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.WorkResults;
 import org.gradle.cache.PersistentStateCache;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.base.internal.tasks.SimpleStaleClassCleaner;
-import org.gradle.language.nativeplatform.internal.incremental.sourceparser.CSourceParser;
-import org.gradle.nativeplatform.toolchain.Clang;
-import org.gradle.nativeplatform.toolchain.Gcc;
-import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.internal.NativeCompileSpec;
 
 @NonNullApi
 public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements Compiler<T> {
+    private final IncrementalCompilation incrementalCompilation;
+    private final PersistentStateCache<CompilationState> stateCache;
     private final Compiler<T> delegateCompiler;
-    private final boolean importsAreIncludes;
     private final TaskInternal task;
-    private final FileSystemSnapshotter fileSystemSnapshotter;
-    private final CompilationStateCacheFactory compilationStateCacheFactory;
-    private final CSourceParser sourceParser;
-    private final HeaderDependenciesCollector headerDependenciesCollector;
 
-    public IncrementalNativeCompiler(TaskInternal task, FileSystemSnapshotter fileSystemSnapshotter, CompilationStateCacheFactory compilationStateCacheFactory, Compiler<T> delegateCompiler, NativeToolChain toolChain, HeaderDependenciesCollector headerDependenciesCollector, CSourceParser sourceParser) {
+    public IncrementalNativeCompiler(TaskInternal task, IncrementalCompilation incrementalCompilation, PersistentStateCache<CompilationState> stateCache, Compiler<T> delegateCompiler) {
         this.task = task;
-        this.fileSystemSnapshotter = fileSystemSnapshotter;
-        this.compilationStateCacheFactory = compilationStateCacheFactory;
+        this.incrementalCompilation = incrementalCompilation;
+        this.stateCache = stateCache;
         this.delegateCompiler = delegateCompiler;
-        this.importsAreIncludes = Clang.class.isAssignableFrom(toolChain.getClass()) || Gcc.class.isAssignableFrom(toolChain.getClass());
-        this.headerDependenciesCollector = headerDependenciesCollector;
-        this.sourceParser = sourceParser;
     }
 
     @Override
     public WorkResult execute(final T spec) {
-        PersistentStateCache<CompilationState> compileStateCache = compilationStateCacheFactory.create(task.getPath());
-
-        IncrementalCompileProcessor processor = createProcessor(compileStateCache, createIncrementalCompileFilesFactory(spec));
-
-        IncrementalCompilation compilation = processor.processSourceFiles(spec.getSourceFiles());
-
-        spec.setSourceFileIncludeDirectives(compilation.getSourceFileIncludeDirectives());
+        spec.setSourceFileIncludeDirectives(incrementalCompilation.getSourceFileIncludeDirectives());
 
         WorkResult workResult;
         if (spec.isIncrementalCompile()) {
-            workResult = doIncrementalCompile(compilation, spec);
+            workResult = doIncrementalCompile(incrementalCompilation, spec);
         } else {
             workResult = doCleanIncrementalCompile(spec);
         }
 
-        compileStateCache.set(compilation.getFinalState());
+        stateCache.set(incrementalCompilation.getFinalState());
 
         return workResult;
-    }
-
-    private IncrementalCompileFilesFactory createIncrementalCompileFilesFactory(T spec) {
-        DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, importsAreIncludes);
-        DefaultSourceIncludesResolver includesResolver = new DefaultSourceIncludesResolver(spec.getIncludeRoots());
-        return new IncrementalCompileFilesFactory(sourceIncludesParser, includesResolver, fileSystemSnapshotter);
     }
 
     protected WorkResult doIncrementalCompile(IncrementalCompilation compilation, T spec) {
@@ -102,9 +79,5 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
 
     protected TaskInternal getTask() {
         return task;
-    }
-
-    private IncrementalCompileProcessor createProcessor(PersistentStateCache<CompilationState> compileStateCache, IncrementalCompileFilesFactory incrementalCompileFilesFactory) {
-        return new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
     }
 }

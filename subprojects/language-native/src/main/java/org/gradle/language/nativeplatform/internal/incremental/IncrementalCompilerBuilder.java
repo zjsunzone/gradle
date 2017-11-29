@@ -17,10 +17,10 @@
 package org.gradle.language.nativeplatform.internal.incremental;
 
 import org.gradle.api.internal.TaskInternal;
+import org.gradle.cache.PersistentStateCache;
 import org.gradle.language.base.internal.compile.Compiler;
-import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.internal.NativeCompileSpec;
 
 public interface IncrementalCompilerBuilder {
-    <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, NativeToolChain toolchain, HeaderDependenciesCollector headerDependenciesCollector);
+    <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, IncrementalCompilation incrementalCompilation, PersistentStateCache<CompilationState> stateCache);
 }

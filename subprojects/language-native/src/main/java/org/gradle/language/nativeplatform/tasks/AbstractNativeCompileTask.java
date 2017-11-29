@@ -26,7 +26,6 @@ import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
 import org.gradle.api.internal.file.FileCollectionFactory;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
 import org.gradle.api.internal.file.collections.MinimalFileSet;
-import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
@@ -50,7 +49,6 @@ import org.gradle.language.nativeplatform.internal.incremental.CompilationStateC
 import org.gradle.language.nativeplatform.internal.incremental.DefaultHeaderDependenciesCollector;
 import org.gradle.language.nativeplatform.internal.incremental.DefaultSourceIncludesParser;
 import org.gradle.language.nativeplatform.internal.incremental.DefaultSourceIncludesResolver;
-import org.gradle.language.nativeplatform.internal.incremental.HeaderDependenciesCollector;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompilation;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileFilesFactory;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileProcessor;
@@ -149,14 +147,9 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
     private <T extends NativeCompileSpec> WorkResult doCompile(T spec, PlatformToolProvider platformToolProvider) {
         Class<T> specType = Cast.uncheckedCast(spec.getClass());
         Compiler<T> baseCompiler = platformToolProvider.newCompiler(specType);
-        HeaderDependenciesCollector headerDependenciesCollector = createDependenciesCollector();
-        Compiler<T> incrementalCompiler = getIncrementalCompilerBuilder().createIncrementalCompiler(this, baseCompiler, toolChain, headerDependenciesCollector);
+        Compiler<T> incrementalCompiler = getIncrementalCompilerBuilder().createIncrementalCompiler(this, baseCompiler, headerDependencies.incrementalCompilation, headerDependencies.compileStateCache);
         Compiler<T> loggingCompiler = BuildOperationLoggingCompilerDecorator.wrap(incrementalCompiler);
         return loggingCompiler.execute(spec);
-    }
-
-    private DefaultHeaderDependenciesCollector createDependenciesCollector() {
-        return new DefaultHeaderDependenciesCollector(((ProjectInternal) getProject()).getServices().get(DirectoryFileTreeFactory.class));
     }
 
     protected abstract NativeCompileSpec createCompileSpec();
@@ -311,8 +304,13 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
         return getFileCollectionFactory().create(headerDependencies);
     }
 
+    /**
+     * Performs dependency analysis on the source files to determine the headers required for each source file.
+     */
     private class HeaderDependencies implements MinimalFileSet {
         Set<File> files;
+        IncrementalCompilation incrementalCompilation;
+        PersistentStateCache<CompilationState> compileStateCache;
 
         @Override
         public Set<File> getFiles() {
@@ -326,15 +324,14 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
 
                 List<File> includeRoots = ImmutableList.copyOf(includes);
 
-                PersistentStateCache<CompilationState> compileStateCache = compilationStateCacheFactory.create(getPath() + "-analysis");
+                compileStateCache = compilationStateCacheFactory.create(getPath());
                 DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, Clang.class.isAssignableFrom(toolChain.getClass()) || Gcc.class.isAssignableFrom(toolChain.getClass()));
                 DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots);
                 IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter);
                 IncrementalCompileProcessor incrementalCompileProcessor = new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
 
-                IncrementalCompilation incrementalCompilation = incrementalCompileProcessor.processSourceFiles(source.getFiles());
+                incrementalCompilation = incrementalCompileProcessor.processSourceFiles(source.getFiles());
                 files = new DefaultHeaderDependenciesCollector(directoryFileTreeFactory).collectExistingHeaderDependencies(getPath(), includeRoots, incrementalCompilation);
-                compileStateCache.set(incrementalCompilation.getFinalState());
             }
             return files;
         }
