@@ -50,11 +50,11 @@ class DefaultTaskOutputsTest extends Specification {
         getProject() >> project
     }
     private final DefaultTaskOutputs outputs = new DefaultTaskOutputs([
-        resolve: {new File(it)},
+        resolve: { new File(it) },
         resolveFiles: { it ->
             new SimpleFileCollection(it*.call().flatten().collect { new File((String) it) })
         }
-    ] as FileResolver, task, taskStatusNagger)
+    ] as FileResolver, task, taskStatusNagger, {} as Runnable)
 
     void hasNoOutputsByDefault() {
         setup:

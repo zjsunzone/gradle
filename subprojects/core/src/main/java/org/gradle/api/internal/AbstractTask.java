@@ -30,6 +30,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.internal.file.TemporaryFileProvider;
 import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.internal.project.taskfactory.TaskClassInfoStore;
 import org.gradle.api.internal.tasks.ClassLoaderAwareTaskAction;
 import org.gradle.api.internal.tasks.ContextAwareTaskAction;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
@@ -153,7 +154,7 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
         services = project.getServices();
 
         taskMutator = new TaskMutator(this);
-        changeDetection = new ChangeDetection(this, project.getFileResolver(), taskMutator);
+        changeDetection = new ChangeDetection(project.getFileResolver(), this, taskMutator, services.get(TaskClassInfoStore.class));
 
         dependencies = new InputsAwareTaskDependency(changeDetection.getTaskInputs(), tasks);
     }

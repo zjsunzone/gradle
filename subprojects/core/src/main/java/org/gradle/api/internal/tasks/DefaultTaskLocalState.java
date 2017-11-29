@@ -28,15 +28,17 @@ import java.util.List;
 
 @NonNullApi
 public class DefaultTaskLocalState implements TaskLocalStateInternal {
+    private final Runnable discoverInputsAndOutputs;
     private final FileResolver resolver;
     private final TaskInternal task;
     private final TaskMutator taskMutator;
     private final List<Object> paths = Lists.newArrayList();
 
-    public DefaultTaskLocalState(FileResolver resolver, TaskInternal task, TaskMutator taskMutator) {
+    public DefaultTaskLocalState(FileResolver resolver, TaskInternal task, TaskMutator taskMutator, Runnable discoverInputsAndOutputs) {
         this.resolver = resolver;
         this.task = task;
         this.taskMutator = taskMutator;
+        this.discoverInputsAndOutputs = discoverInputsAndOutputs;
     }
 
     @Override
@@ -51,6 +53,7 @@ public class DefaultTaskLocalState implements TaskLocalStateInternal {
 
     @Override
     public FileCollection getFiles() {
+        discoverInputsAndOutputs.run();
         return new DefaultConfigurableFileCollection(task + " local state", resolver, null, paths);
     }
 }

@@ -58,6 +58,7 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
     private static final TaskOutputCachingState NO_OUTPUTS_DECLARED = DefaultTaskOutputCachingState.disabled(TaskOutputCachingDisabledReasonCategory.NO_OUTPUTS_DECLARED, "No outputs declared");
 
     private final FileCollection allOutputFiles;
+    private final Runnable discoverInputsAndOutputs;
     private AndSpec<TaskInternal> upToDateSpec = AndSpec.empty();
     private List<SelfDescribingSpec<TaskInternal>> cacheIfSpecs = new LinkedList<SelfDescribingSpec<TaskInternal>>();
     private List<SelfDescribingSpec<TaskInternal>> doNotCacheIfSpecs = new LinkedList<SelfDescribingSpec<TaskInternal>>();
@@ -68,11 +69,12 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
     private final TaskInternal task;
     private final TaskMutator taskMutator;
 
-    public DefaultTaskOutputs(FileResolver resolver, final TaskInternal task, TaskMutator taskMutator) {
+    public DefaultTaskOutputs(FileResolver resolver, final TaskInternal task, TaskMutator taskMutator, Runnable discoverInputsAndOutputs) {
         this.resolver = resolver;
         this.task = task;
         this.taskMutator = taskMutator;
         this.allOutputFiles = new TaskOutputUnionFileCollection(task);
+        this.discoverInputsAndOutputs = discoverInputsAndOutputs;
     }
 
     @Override
@@ -182,16 +184,19 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
 
     @Override
     public boolean hasDeclaredOutputs() {
+        discoverInputsAndOutputs.run();
         return !declaredFileProperties.isEmpty();
     }
 
     @Override
     public FileCollection getFiles() {
+        discoverInputsAndOutputs.run();
         return allOutputFiles;
     }
 
     @Override
     public ImmutableSortedSet<TaskOutputFilePropertySpec> getFileProperties() {
+        discoverInputsAndOutputs.run();
         if (fileProperties == null) {
             TaskPropertyUtils.ensurePropertiesHaveNames(declaredFileProperties);
             Iterator<TaskOutputFilePropertySpec> flattenedProperties = Iterators.concat(Iterables.transform(declaredFileProperties, new Function<TaskPropertySpec, Iterator<? extends TaskOutputFilePropertySpec>>() {
@@ -300,6 +305,7 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
 
     @Override
     public void validate(TaskValidationContext context) {
+        discoverInputsAndOutputs.run();
         TaskPropertyUtils.ensurePropertiesHaveNames(declaredFileProperties);
         for (DeclaredTaskOutputFileProperty property : declaredFileProperties) {
             property.validate(context);

@@ -51,15 +51,17 @@ public class DefaultTaskInputs implements TaskInputsInternal {
     private final FileResolver resolver;
     private final TaskInternal task;
     private final TaskMutator taskMutator;
+    private final Runnable discoverInputsAndOutputs;
     private final Map<String, PropertyValue> properties = new HashMap<String, PropertyValue>();
     private final List<DeclaredTaskInputFileProperty> declaredFileProperties = Lists.newArrayList();
     private final TaskInputs deprecatedThis;
     private ImmutableSortedSet<TaskInputFilePropertySpec> fileProperties;
 
-    public DefaultTaskInputs(FileResolver resolver, TaskInternal task, TaskMutator taskMutator) {
+    public DefaultTaskInputs(FileResolver resolver, TaskInternal task, TaskMutator taskMutator, Runnable discoverInputsAndOutputs) {
         this.resolver = resolver;
         this.task = task;
         this.taskMutator = taskMutator;
+        this.discoverInputsAndOutputs = discoverInputsAndOutputs;
         String taskName = task.getName();
         this.allInputFiles = new TaskInputUnionFileCollection(taskName, "input", false, declaredFileProperties);
         this.allSourceFiles = new TaskInputUnionFileCollection(taskName, "source", true, declaredFileProperties);
@@ -68,16 +70,19 @@ public class DefaultTaskInputs implements TaskInputsInternal {
 
     @Override
     public boolean getHasInputs() {
+        discoverInputsAndOutputs.run();
         return !declaredFileProperties.isEmpty() || !properties.isEmpty();
     }
 
     @Override
     public FileCollection getFiles() {
+        discoverInputsAndOutputs.run();
         return allInputFiles;
     }
 
     @Override
     public ImmutableSortedSet<TaskInputFilePropertySpec> getFileProperties() {
+        discoverInputsAndOutputs.run();
         if (fileProperties == null) {
             ensurePropertiesHaveNames(declaredFileProperties);
             fileProperties = TaskPropertyUtils.<TaskInputFilePropertySpec>collectFileProperties("input", declaredFileProperties.iterator());
@@ -148,6 +153,7 @@ public class DefaultTaskInputs implements TaskInputsInternal {
 
     @Override
     public boolean getHasSourceFiles() {
+        discoverInputsAndOutputs.run();
         for (DeclaredTaskInputFileProperty propertySpec : declaredFileProperties) {
             if (propertySpec.isSkipWhenEmpty()) {
                 return true;
@@ -158,11 +164,13 @@ public class DefaultTaskInputs implements TaskInputsInternal {
 
     @Override
     public FileCollection getSourceFiles() {
+        discoverInputsAndOutputs.run();
         return allSourceFiles;
     }
 
     @Override
     public void validate(TaskValidationContext context) {
+        discoverInputsAndOutputs.run();
         TaskPropertyUtils.ensurePropertiesHaveNames(declaredFileProperties);
         for (PropertyValue propertyValue : properties.values()) {
             propertyValue.getPropertySpec().validate(context);
@@ -179,6 +187,7 @@ public class DefaultTaskInputs implements TaskInputsInternal {
     }
 
     public Map<String, Object> getProperties() {
+        discoverInputsAndOutputs.run();
         Map<String, Object> actualProperties = new HashMap<String, Object>();
         for (PropertyValue property : properties.values()) {
             String propertyName = property.resolveName();
@@ -237,6 +246,7 @@ public class DefaultTaskInputs implements TaskInputsInternal {
 
     @Override
     public TaskInputPropertyBuilder registerProperty(String name, ValidatingValue value) {
+        discoverInputsAndOutputs.run();
         PropertyValue propertyValue = properties.get(name);
         DeclaredTaskInputProperty spec;
         if (propertyValue instanceof SimplePropertyValue) {
@@ -252,6 +262,7 @@ public class DefaultTaskInputs implements TaskInputsInternal {
 
     @Override
     public TaskInputPropertyBuilder registerNested(String name, ValidatingValue value) {
+        discoverInputsAndOutputs.run();
         PropertyValue propertyValue = properties.get(name);
         DeclaredTaskInputProperty spec;
         if (propertyValue instanceof NestedBeanTypePropertyValue) {

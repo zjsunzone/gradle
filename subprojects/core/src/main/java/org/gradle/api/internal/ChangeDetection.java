@@ -18,6 +18,7 @@ package org.gradle.api.internal;
 
 import org.gradle.api.NonNullApi;
 import org.gradle.api.internal.file.FileResolver;
+import org.gradle.api.internal.project.taskfactory.TaskClassInfoStore;
 import org.gradle.api.internal.tasks.DefaultTaskDestroyables;
 import org.gradle.api.internal.tasks.DefaultTaskInputs;
 import org.gradle.api.internal.tasks.DefaultTaskLocalState;
@@ -27,18 +28,23 @@ import org.gradle.api.tasks.TaskDestroyables;
 import org.gradle.api.tasks.TaskLocalState;
 
 @NonNullApi
-public class ChangeDetection {
+public class ChangeDetection implements Runnable {
 
+    private final TaskInternal task;
     private final TaskInputsInternal taskInputs;
     private final TaskOutputsInternal taskOutputs;
     private final TaskDestroyables taskDestroyables;
     private final TaskLocalState taskLocalState;
+    private final TaskClassInfoStore taskClassInfoStore;
+    private boolean inputsAndOutputsDetected;
 
-    public ChangeDetection(TaskInternal task, FileResolver fileResolver, TaskMutator taskMutator) {
-        this.taskInputs = new DefaultTaskInputs(fileResolver, task, taskMutator);
-        this.taskOutputs = new DefaultTaskOutputs(fileResolver, task, taskMutator);
-        this.taskDestroyables = new DefaultTaskDestroyables(fileResolver, task, taskMutator);
-        this.taskLocalState = new DefaultTaskLocalState(fileResolver, task, taskMutator);
+    public ChangeDetection(FileResolver fileResolver, TaskInternal task, TaskMutator taskMutator, TaskClassInfoStore taskClassInfoStore) {
+        this.task = task;
+        this.taskClassInfoStore = taskClassInfoStore;
+        this.taskInputs = new DefaultTaskInputs(fileResolver, task, taskMutator, this);
+        this.taskOutputs = new DefaultTaskOutputs(fileResolver, task, taskMutator, this);
+        this.taskDestroyables = new DefaultTaskDestroyables(fileResolver, task, taskMutator, this);
+        this.taskLocalState = new DefaultTaskLocalState(fileResolver, task, taskMutator, this);
     }
 
     public TaskInputsInternal getTaskInputs() {
@@ -57,4 +63,11 @@ public class ChangeDetection {
         return taskLocalState;
     }
 
+    @Override
+    public void run() {
+        if (!inputsAndOutputsDetected) {
+            inputsAndOutputsDetected = true;
+            taskClassInfoStore.getTaskClassInfo(task.getClass()).getValidator().addInputsAndOutputs(task);
+        }
+    }
 }

@@ -32,12 +32,14 @@ public class DefaultTaskDestroyables implements TaskDestroyablesInternal {
     private final FileResolver resolver;
     private final TaskInternal task;
     private final TaskMutator taskMutator;
+    private final Runnable discoverInputsAndOutputs;
     private final List<Object> paths = Lists.newArrayList();
 
-    public DefaultTaskDestroyables(FileResolver resolver, TaskInternal task, TaskMutator taskMutator) {
+    public DefaultTaskDestroyables(FileResolver resolver, TaskInternal task, TaskMutator taskMutator, Runnable discoverInputsAndOutputs) {
         this.resolver = resolver;
         this.task = task;
         this.taskMutator = taskMutator;
+        this.discoverInputsAndOutputs = discoverInputsAndOutputs;
     }
 
     @Override
@@ -74,6 +76,7 @@ public class DefaultTaskDestroyables implements TaskDestroyablesInternal {
 
     @Override
     public FileCollection getFiles() {
+        discoverInputsAndOutputs.run();
         return new DefaultConfigurableFileCollection(task + " destroy files", resolver, null, paths);
     }
 }
