@@ -17,8 +17,6 @@
 package org.gradle.api.internal.project.taskfactory;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.internal.TaskInternal;
-import org.gradle.api.internal.tasks.TaskPropertyValue;
 import org.gradle.api.internal.tasks.TaskValidationContext;
 import org.gradle.api.internal.tasks.ValidationAction;
 import org.gradle.api.provider.Provider;
@@ -33,11 +31,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class TaskPropertyInfo implements Comparable<TaskPropertyInfo> {
-    private static final UpdateAction NO_OP_CONFIGURATION_ACTION = new UpdateAction() {
-        @Override
-        public void update(TaskInternal task, TaskPropertyValue futureValue) {
-        }
-    };
 
     private final TaskPropertyInfo parent;
     private final String propertyName;
@@ -51,7 +44,7 @@ public class TaskPropertyInfo implements Comparable<TaskPropertyInfo> {
         this.propertyType = propertyType;
         this.method = method;
         method.setAccessible(true);
-        this.configureAction = configureAction == null ? NO_OP_CONFIGURATION_ACTION : configureAction;
+        this.configureAction = configureAction == null ? UpdateAction.NO_OP_CONFIGURATION_ACTION : configureAction;
     }
 
     @Override

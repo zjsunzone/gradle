@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.internal.TaskInternal;
+import org.gradle.api.internal.tasks.InputPropertyRegistrationInternal;
 import org.gradle.api.internal.tasks.TaskPropertyValue;
 
 import java.util.List;
@@ -37,14 +38,11 @@ public class TaskClassValidator {
         this.cacheable = cacheable;
     }
 
-    public void addInputsAndOutputs(final TaskInternal task) {
+    public void addInputsAndOutputs(final TaskInternal task, InputPropertyRegistrationInternal inputPropertyRegistration) {
         for (TaskPropertyInfo property : annotatedProperties) {
             property.getConfigureAction().update(task, new TaskPropertyValue(property, task));
+            property.getConfigureAction().updateInputs(inputPropertyRegistration, property.getName(), new TaskPropertyValue(property, task));
         }
-    }
-
-    public boolean hasAnythingToValidate() {
-        return !annotatedProperties.isEmpty();
     }
 
     public ImmutableSortedSet<TaskPropertyInfo> getAnnotatedProperties() {

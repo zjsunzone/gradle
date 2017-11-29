@@ -25,6 +25,26 @@
             "changes": [
                 "org.gradle.api.artifacts.DirectDependency"
             ]
+        },
+        {
+            "type": "org.gradle.api.tasks.InputPropertyRegistration",
+            "member": "Class org.gradle.api.tasks.InputPropertyRegistration",
+            "acceptation": "Extracted new interface"
+        },
+        {
+            "type": "org.gradle.api.tasks.InputPropertyRegistration",
+            "member": "Method org.gradle.api.tasks.InputPropertyRegistration.getHasInputs()",
+            "acceptation": "Extracted new interface"
+        },
+        {
+            "type": "org.gradle.api.tasks.InputPropertyRegistration",
+            "member": "Method org.gradle.api.tasks.InputPropertyRegistration.getHasSourceFiles()",
+            "acceptation": "Extracted new interface"
+        },
+        {
+            "type": "org.gradle.api.tasks.InputPropertyRegistration",
+            "member": "Method org.gradle.api.tasks.InputPropertyRegistration.getProperties()",
+            "acceptation": "Extracted new interface"
         }
     ]
 }

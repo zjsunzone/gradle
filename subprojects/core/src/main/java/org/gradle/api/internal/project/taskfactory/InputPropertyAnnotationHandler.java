@@ -16,8 +16,8 @@
 package org.gradle.api.internal.project.taskfactory;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.TaskInternal;
-import org.gradle.api.internal.tasks.TaskPropertyValue;
+import org.gradle.api.internal.tasks.InputPropertyRegistrationInternal;
+import org.gradle.api.internal.tasks.ValidatingValue;
 import org.gradle.api.tasks.Input;
 
 import java.io.File;
@@ -31,8 +31,9 @@ public class InputPropertyAnnotationHandler implements PropertyAnnotationHandler
     @SuppressWarnings("Since15")
     public void attachActions(final TaskPropertyActionContext context) {
         context.setConfigureAction(new UpdateAction() {
-            public void update(TaskInternal task, TaskPropertyValue futureValue) {
-                task.getInputs().registerProperty(context.getName(), futureValue)
+            @Override
+            void updateInputs(InputPropertyRegistrationInternal inputs, String propertyName, ValidatingValue futureValue) {
+                inputs.registerProperty(propertyName, futureValue)
                     .optional(context.isOptional());
             }
         });

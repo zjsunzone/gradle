@@ -16,8 +16,25 @@
 package org.gradle.api.internal.project.taskfactory;
 
 import org.gradle.api.internal.TaskInternal;
+import org.gradle.api.internal.tasks.InputPropertyRegistrationInternal;
 import org.gradle.api.internal.tasks.TaskPropertyValue;
+import org.gradle.api.internal.tasks.ValidatingValue;
 
-public interface UpdateAction {
-    void update(TaskInternal task, TaskPropertyValue futureValue);
+public abstract class UpdateAction {
+    public static final UpdateAction NO_OP_CONFIGURATION_ACTION = new UpdateAction() {
+        @Override
+        public void update(TaskInternal task, TaskPropertyValue futureValue) {
+        }
+
+        @Override
+        public void updateInputs(InputPropertyRegistrationInternal inputs, String propertyName, ValidatingValue futureValue) {
+        }
+    };
+
+    void update(TaskInternal task, TaskPropertyValue futureValue) {
+    }
+
+    void updateInputs(InputPropertyRegistrationInternal inputs, String propertyName, ValidatingValue futureValue) {
+    }
+
 }

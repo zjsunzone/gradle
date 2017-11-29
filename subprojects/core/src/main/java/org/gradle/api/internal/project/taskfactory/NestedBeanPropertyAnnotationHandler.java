@@ -16,8 +16,8 @@
 
 package org.gradle.api.internal.project.taskfactory;
 
-import org.gradle.api.internal.TaskInternal;
-import org.gradle.api.internal.tasks.TaskPropertyValue;
+import org.gradle.api.internal.tasks.InputPropertyRegistrationInternal;
+import org.gradle.api.internal.tasks.ValidatingValue;
 import org.gradle.api.tasks.Nested;
 
 import java.lang.annotation.Annotation;
@@ -32,8 +32,9 @@ public class NestedBeanPropertyAnnotationHandler implements PropertyAnnotationHa
     public void attachActions(final TaskPropertyActionContext context) {
         context.setNestedType(context.getValueType());
         context.setConfigureAction(new UpdateAction() {
-            public void update(TaskInternal task, final TaskPropertyValue futureValue) {
-                task.getInputs().registerNested(context.getName(), futureValue)
+            @Override
+            void updateInputs(InputPropertyRegistrationInternal inputs, String propertyName, ValidatingValue futureValue) {
+                inputs.registerNested(propertyName, futureValue)
                     .optional(context.isOptional());
             }
         });

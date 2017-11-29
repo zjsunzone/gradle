@@ -28,13 +28,7 @@ import java.util.Map;
  * <p>You can obtain a {@code TaskInputs} instance using {@link org.gradle.api.Task#getInputs()}.</p>
  */
 @HasInternalProtocol
-public interface TaskInputs extends CompatibilityAdapterForTaskInputs {
-    /**
-     * Returns true if this task has declared the inputs that it consumes.
-     *
-     * @return true if this task has declared any inputs.
-     */
-    boolean getHasInputs();
+public interface TaskInputs extends InputPropertyRegistration, CompatibilityAdapterForTaskInputs {
 
     /**
      * Returns the input files of this task.
@@ -69,13 +63,6 @@ public interface TaskInputs extends CompatibilityAdapterForTaskInputs {
     TaskInputFilePropertyBuilder dir(Object dirPath);
 
     /**
-     * Returns the set of input properties for this task.
-     *
-     * @return The properties.
-     */
-    Map<String, Object> getProperties();
-
-    /**
      * <p>Registers an input property for this task. This value is persisted when the task executes, and is compared
      * against the property value for later invocations of the task, to determine if the task is up-to-date.</p>
      *
@@ -99,13 +86,6 @@ public interface TaskInputs extends CompatibilityAdapterForTaskInputs {
      * @param properties The properties.
      */
     TaskInputs properties(Map<String, ?> properties);
-
-    /**
-     * Returns true if this task has declared that it accepts source files.
-     *
-     * @return true if this task has source files, false if not.
-     */
-    boolean getHasSourceFiles();
 
     /**
      * Returns the set of source files for this task. These are the subset of input files which the task actually does work on.

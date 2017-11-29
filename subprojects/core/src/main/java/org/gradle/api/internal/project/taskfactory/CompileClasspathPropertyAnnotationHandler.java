@@ -16,10 +16,10 @@
 
 package org.gradle.api.internal.project.taskfactory;
 
-import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.changedetection.state.CompileClasspathSnapshotter;
 import org.gradle.api.internal.changedetection.state.FileCollectionSnapshotter;
-import org.gradle.api.internal.tasks.TaskPropertyValue;
+import org.gradle.api.internal.tasks.InputPropertyRegistrationInternal;
+import org.gradle.api.internal.tasks.ValidatingValue;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.CompileClasspathNormalizer;
 import org.gradle.api.tasks.InputFiles;
@@ -45,9 +45,10 @@ public class CompileClasspathPropertyAnnotationHandler implements OverridingProp
     @Override
     public void attachActions(final TaskPropertyActionContext context) {
         context.setConfigureAction(new UpdateAction() {
-            public void update(TaskInternal task, TaskPropertyValue futureValue) {
-                task.getInputs().registerFiles(futureValue)
-                    .withPropertyName(context.getName())
+            @Override
+            void updateInputs(InputPropertyRegistrationInternal inputs, String propertyName, ValidatingValue futureValue) {
+                inputs.registerFiles(futureValue)
+                    .withPropertyName(propertyName)
                     .withNormalizer(CompileClasspathNormalizer.class)
                     .optional(context.isOptional());
             }
