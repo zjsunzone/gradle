@@ -17,6 +17,7 @@
 package org.gradle.nativeplatform.toolchain.internal;
 
 import com.google.common.base.Joiner;
+import org.gradle.api.internal.Stats;
 import org.gradle.internal.io.StreamByteBuffer;
 import org.gradle.internal.operations.BuildOperationContext;
 import org.gradle.internal.os.OperatingSystem;
@@ -81,7 +82,10 @@ public class DefaultCommandLineToolInvocationWorker implements CommandLineToolIn
         toolExec.setStandardOutput(stdOutput.getOutputStream());
 
         try {
+            long startNs = System.nanoTime();
             toolExec.execute();
+            long endNs = System.nanoTime();
+            Stats.compileExecution(null, startNs, endNs);
             invocation.getLogger().operationSuccess(description.getDisplayName(), combineOutput(stdOutput, errOutput));
         } catch (ExecException e) {
             invocation.getLogger().operationFailed(description.getDisplayName(), combineOutput(stdOutput, errOutput));

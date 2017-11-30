@@ -30,26 +30,13 @@ public class IncrementalCompileProcessor {
     }
 
     public IncrementalCompilation processSourceFiles(Collection<File> sourceFiles) {
-        long start = System.nanoTime();
 
         CompilationState previousCompileState = previousCompileStateCache.get();
         IncementalCompileSourceProcessor processor = incrementalCompileFilesFactory.filesFor(previousCompileState);
         for (File sourceFile : sourceFiles) {
             processor.processSource(sourceFile);
         }
-        IncrementalCompilation result = processor.getResult();
-
-        long end = System.nanoTime();
-
-        System.out.println("HEADER ANALYSIS");
-        System.out.println("analysis time: " + (end - start) / 1000000);
-        System.out.println("source files: " + result.getSourceFileIncludeDirectives().size());
-        System.out.println("recompile: " + result.getRecompile().size());
-        System.out.println("removed: " + result.getRemoved().size());
-        System.out.println("unresolved? " + result.isUnresolvedHeaders());
-        System.out.println("headers: " + result.getExistingHeaders().size());
-
-        return result;
+        return processor.getResult();
     }
 
 }

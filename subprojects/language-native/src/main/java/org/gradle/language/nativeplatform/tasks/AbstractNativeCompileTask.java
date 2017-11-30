@@ -54,6 +54,7 @@ import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompil
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileProcessor;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompilerBuilder;
 import org.gradle.language.nativeplatform.internal.incremental.PathLookup;
+import org.gradle.api.internal.Stats;
 import org.gradle.language.nativeplatform.internal.incremental.sourceparser.CSourceParser;
 import org.gradle.nativeplatform.internal.BuildOperationLoggingCompilerDecorator;
 import org.gradle.nativeplatform.platform.NativePlatform;
@@ -150,7 +151,11 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
         Compiler<T> baseCompiler = platformToolProvider.newCompiler(specType);
         Compiler<T> incrementalCompiler = getIncrementalCompilerBuilder().createIncrementalCompiler(this, baseCompiler, headerDependencies.incrementalCompilation, headerDependencies.compileStateCache);
         Compiler<T> loggingCompiler = BuildOperationLoggingCompilerDecorator.wrap(incrementalCompiler);
-        return loggingCompiler.execute(spec);
+        long startNs = System.nanoTime();
+        WorkResult result = loggingCompiler.execute(spec);
+        long endNs = System.nanoTime();
+        Stats.compileProcessing(getPath(), startNs, endNs);
+        return result;
     }
 
     protected abstract NativeCompileSpec createCompileSpec();
@@ -333,8 +338,11 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
                 IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter);
                 IncrementalCompileProcessor incrementalCompileProcessor = new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
 
+                long start = System.nanoTime();
                 incrementalCompilation = incrementalCompileProcessor.processSourceFiles(source.getFiles());
                 files = new DefaultHeaderDependenciesCollector(directoryFileTreeFactory).collectExistingHeaderDependencies(getPath(), includeRoots, incrementalCompilation);
+                long end = System.nanoTime();
+                Stats.analysis(getPath(), start, end);
             }
             return files;
         }

@@ -27,6 +27,7 @@ import org.gradle.api.NonNullApi;
 import org.gradle.api.Task;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.internal.OverlappingOutputs;
+import org.gradle.api.internal.Stats;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.changedetection.changes.IncrementalTaskInputsInternal;
@@ -111,7 +112,10 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
             @Override
             public CurrentTaskExecution getCurrentExecution() {
                 if (currentExecution == null) {
+                    long startNs = System.nanoTime();
                     currentExecution = createExecution(task, getPreviousExecution(), normalizationStrategy);
+                    long endNs = System.nanoTime();
+                    Stats.snapshot(null, startNs, endNs);
                 }
                 return currentExecution;
             }

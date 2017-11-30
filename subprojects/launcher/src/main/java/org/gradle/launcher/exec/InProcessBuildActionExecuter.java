@@ -16,6 +16,7 @@
 
 package org.gradle.launcher.exec;
 
+import org.gradle.api.internal.Stats;
 import org.gradle.initialization.BuildRequestContext;
 import org.gradle.initialization.GradleLauncher;
 import org.gradle.initialization.GradleLauncherFactory;
@@ -51,6 +52,7 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
             }
         } finally {
             buildController.stop();
+            Stats.report();
         }
     }
 }
