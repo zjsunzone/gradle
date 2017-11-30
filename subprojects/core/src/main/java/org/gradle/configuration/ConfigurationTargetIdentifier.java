@@ -102,7 +102,12 @@ public abstract class ConfigurationTargetIdentifier {
 
             @Override
             public String getBuildPath() {
-                return settings.getGradle().getIdentityPath().getPath();
+                // by design the identity path provided by non root builds
+                // via settings.getGradle() is always null as the root project
+                // is not yet available and default identity path resolution
+                // is based on root project.
+                GradleInternal gradle = settings.getGradle();
+                return gradle.getParent() == null ? gradle.getIdentityPath().getPath() : ":" + settings.getRootProject().getName();
             }
         };
     }
