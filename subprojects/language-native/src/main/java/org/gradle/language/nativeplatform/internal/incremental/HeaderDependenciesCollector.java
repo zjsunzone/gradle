@@ -24,6 +24,7 @@ import java.util.List;
 
 @NonNullApi
 public interface HeaderDependenciesCollector {
+    // TODO - remove this
     ImmutableSortedSet<File> collectHeaderDependencies(String taskPath, List<File> includeRoots, IncrementalCompilation incrementalCompilation);
 
     ImmutableSortedSet<File> collectExistingHeaderDependencies(String taskPath, List<File> includeRoots, IncrementalCompilation incrementalCompilation);

@@ -40,13 +40,7 @@ public class DefaultHeaderDependenciesCollector implements HeaderDependenciesCol
 
     @Override
     public ImmutableSortedSet<File> collectHeaderDependencies(String taskPath, List<File> includeRoots, IncrementalCompilation incrementalCompilation) {
-        final Set<File> headerDependencies = new HashSet<File>();
-        if (incrementalCompilation.isUnresolvedHeaders()) {
-            addIncludeRoots(taskPath, includeRoots, headerDependencies);
-        } else {
-            headerDependencies.addAll(incrementalCompilation.getDiscoveredInputs());
-        }
-        return ImmutableSortedSet.copyOf(headerDependencies);
+        throw new UnsupportedOperationException();
     }
 
     @Override

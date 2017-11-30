@@ -53,6 +53,7 @@ import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompil
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileFilesFactory;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileProcessor;
 import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompilerBuilder;
+import org.gradle.language.nativeplatform.internal.incremental.PathLookup;
 import org.gradle.language.nativeplatform.internal.incremental.sourceparser.CSourceParser;
 import org.gradle.nativeplatform.internal.BuildOperationLoggingCompilerDecorator;
 import org.gradle.nativeplatform.platform.NativePlatform;
@@ -308,6 +309,7 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
      * Performs dependency analysis on the source files to determine the headers required for each source file.
      */
     private class HeaderDependencies implements MinimalFileSet {
+        // TODO - discard this state after task has completed/been skipped
         Set<File> files;
         IncrementalCompilation incrementalCompilation;
         PersistentStateCache<CompilationState> compileStateCache;
@@ -321,12 +323,13 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
                 CSourceParser sourceParser = getServices().get(CSourceParser.class);
                 FileSystemSnapshotter fileSystemSnapshotter = getServices().get(FileSystemSnapshotter.class);
                 DirectoryFileTreeFactory directoryFileTreeFactory = getServices().get(DirectoryFileTreeFactory.class);
+                PathLookup pathLookup = getServices().get(PathLookup.class);
 
                 List<File> includeRoots = ImmutableList.copyOf(includes);
 
                 compileStateCache = compilationStateCacheFactory.create(getPath());
                 DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, Clang.class.isAssignableFrom(toolChain.getClass()) || Gcc.class.isAssignableFrom(toolChain.getClass()));
-                DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots);
+                DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots, pathLookup);
                 IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter);
                 IncrementalCompileProcessor incrementalCompileProcessor = new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
 

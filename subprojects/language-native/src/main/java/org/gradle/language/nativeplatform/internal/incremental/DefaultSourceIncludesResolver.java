@@ -17,7 +17,6 @@ package org.gradle.language.nativeplatform.internal.incremental;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import org.gradle.internal.FileUtils;
 import org.gradle.language.nativeplatform.internal.Expression;
 import org.gradle.language.nativeplatform.internal.Include;
 import org.gradle.language.nativeplatform.internal.IncludeDirectives;
@@ -40,11 +39,13 @@ import java.util.Set;
 
 public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
     private final List<File> includePaths;
-    private final Map<File, Map<String, Boolean>> includeRoots;
+    private final PathLookup pathLookup;
+    private final Map<File, Map<String, IncludeLookup>> includeRoots;
 
-    public DefaultSourceIncludesResolver(List<File> includePaths) {
+    public DefaultSourceIncludesResolver(List<File> includePaths, PathLookup pathLookup) {
         this.includePaths = includePaths;
-        this.includeRoots = new HashMap<File, Map<String, Boolean>>();
+        this.pathLookup = pathLookup;
+        this.includeRoots = new HashMap<File, Map<String, IncludeLookup>>();
     }
 
     @Override
@@ -246,37 +247,55 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
     }
 
     private List<File> prependSourceDir(File sourceFile, List<File> includePaths) {
+        File searchDir = sourceFile.getParentFile();
+        if (!includePaths.isEmpty() && searchDir.equals(includePaths.get(0))) {
+            // The source file dir is already at the start of the path
+            return includePaths;
+        }
         List<File> quotedSearchPath = new ArrayList<File>(includePaths.size() + 1);
-        quotedSearchPath.add(sourceFile.getParentFile());
+        quotedSearchPath.add(searchDir);
         quotedSearchPath.addAll(includePaths);
         return quotedSearchPath;
     }
 
     private void searchForDependency(List<File> searchPath, String include, BuildableResult dependencies) {
         for (File searchDir : searchPath) {
-            File candidate = new File(searchDir, include);
-
-            Map<String, Boolean> searchedIncludes = includeRoots.get(searchDir);
+            Map<String, IncludeLookup> searchedIncludes = includeRoots.get(searchDir);
             if (searchedIncludes == null) {
-                searchedIncludes = new HashMap<String, Boolean>();
+                searchedIncludes = new HashMap<String, IncludeLookup>();
                 includeRoots.put(searchDir, searchedIncludes);
             }
-            dependencies.searched(candidate);
-            if (searchedIncludes.containsKey(include)) {
-                if (searchedIncludes.get(include)) {
-                    dependencies.resolved(FileUtils.canonicalize(candidate));
+
+            IncludeLookup lookup = searchedIncludes.get(include);
+            if (lookup != null) {
+                if (lookup.isFile) {
+                    dependencies.resolved(lookup.file);
                     return;
                 }
                 continue;
             }
 
-            boolean found = candidate.isFile();
-            searchedIncludes.put(include, found);
+            // TODO - normalize the path
+            File candidate = new File(searchDir, include);
+            // TODO - reuse this elsewhere that the mirror is used
+            boolean isFile = pathLookup.isFile(candidate);
+            lookup = isFile ? new IncludeLookup(candidate, true) : new IncludeLookup(null, false);
+            searchedIncludes.put(include, lookup);
 
-            if (found) {
-                dependencies.resolved(FileUtils.canonicalize(candidate));
+            if (isFile) {
+                dependencies.resolved(lookup.file);
                 return;
             }
+        }
+    }
+
+    private static class IncludeLookup {
+        final File file;
+        final boolean isFile;
+
+        IncludeLookup(File file, boolean isFile) {
+            this.file = file;
+            this.isFile = isFile;
         }
     }
 
@@ -321,12 +340,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
 
     private static class BuildableResult implements IncludeResolutionResult {
         private final Set<File> files = new LinkedHashSet<File>();
-        private final Set<File> candidates = new LinkedHashSet<File>();
         private boolean missing;
-
-        void searched(File candidate) {
-            candidates.add(candidate);
-        }
 
         void resolved(File file) {
             files.add(file);
@@ -344,11 +358,6 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         @Override
         public Collection<File> getFiles() {
             return files;
-        }
-
-        @Override
-        public Collection<File> getCheckedLocations() {
-            return candidates;
         }
     }
 

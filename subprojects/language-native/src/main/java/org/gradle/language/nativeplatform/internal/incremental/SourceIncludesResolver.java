@@ -30,11 +30,6 @@ public interface SourceIncludesResolver {
         boolean isComplete();
 
         Collection<File> getFiles();
-
-        /**
-         * Every file path searched as part of resolution.
-         */
-        Collection<File> getCheckedLocations();
     }
 
     /**

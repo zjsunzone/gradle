@@ -48,7 +48,6 @@ public class IncrementalCompileProcessor {
         System.out.println("removed: " + result.getRemoved().size());
         System.out.println("unresolved? " + result.isUnresolvedHeaders());
         System.out.println("headers: " + result.getExistingHeaders().size());
-        System.out.println("discovered: " + result.getDiscoveredInputs().size());
 
         return result;
     }

@@ -16,16 +16,12 @@
 
 package org.gradle.language.nativeplatform.tasks;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedSet;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.internal.changedetection.changes.IncrementalTaskInputsInternal;
 import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
 import org.gradle.api.model.ObjectFactory;
@@ -37,26 +33,15 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs;
-import org.gradle.cache.PersistentStateCache;
-import org.gradle.language.nativeplatform.internal.incremental.CompilationState;
 import org.gradle.language.nativeplatform.internal.incremental.CompilationStateCacheFactory;
 import org.gradle.language.nativeplatform.internal.incremental.DefaultHeaderDependenciesCollector;
-import org.gradle.language.nativeplatform.internal.incremental.DefaultSourceIncludesParser;
-import org.gradle.language.nativeplatform.internal.incremental.DefaultSourceIncludesResolver;
 import org.gradle.language.nativeplatform.internal.incremental.HeaderDependenciesCollector;
-import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompilation;
-import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileFilesFactory;
-import org.gradle.language.nativeplatform.internal.incremental.IncrementalCompileProcessor;
 import org.gradle.language.nativeplatform.internal.incremental.sourceparser.CSourceParser;
 
 import javax.inject.Inject;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -95,38 +80,7 @@ public class Depend extends DefaultTask {
 
     @TaskAction
     public void detectHeaders(IncrementalTaskInputs incrementalTaskInputs) throws IOException {
-        IncrementalTaskInputsInternal inputs = (IncrementalTaskInputsInternal) incrementalTaskInputs;
-        List<File> includeRoots = ImmutableList.copyOf(includes);
-        PersistentStateCache<CompilationState> compileStateCache = compilationStateCacheFactory.create(getPath());
-        IncrementalCompileProcessor incrementalCompileProcessor = createIncrementalCompileProcessor(includeRoots, compileStateCache);
-
-        IncrementalCompilation incrementalCompilation = incrementalCompileProcessor.processSourceFiles(source.getFiles());
-        ImmutableSortedSet<File> headerDependencies = headerDependenciesCollector.collectHeaderDependencies(getPath(), includeRoots, incrementalCompilation);
-        ImmutableSortedSet<File> existingHeaderDependencies = headerDependenciesCollector.collectExistingHeaderDependencies(getPath(), includeRoots, incrementalCompilation);
-        compileStateCache.set(incrementalCompilation.getFinalState());
-
-        inputs.newInputs(headerDependencies);
-        writeHeaderDependenciesFile(existingHeaderDependencies);
-    }
-
-    private void writeHeaderDependenciesFile(ImmutableSortedSet<File> headerDependencies) throws IOException {
-        File outputFile = getHeaderDependenciesFile().getAsFile().get();
-        final BufferedWriter outputStreamWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), Charsets.UTF_8));
-        try {
-            for (File header : headerDependencies) {
-                outputStreamWriter.write(header.getAbsolutePath());
-                outputStreamWriter.newLine();
-            }
-        } finally {
-            IOUtils.closeQuietly(outputStreamWriter);
-        }
-    }
-
-    private IncrementalCompileProcessor createIncrementalCompileProcessor(List<File> includeRoots, PersistentStateCache<CompilationState> compileStateCache) {
-        DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, importsAreIncludes.getOrElse(false));
-        DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots);
-        IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter);
-        return new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory);
+        throw new UnsupportedOperationException();
     }
 
     @Input
