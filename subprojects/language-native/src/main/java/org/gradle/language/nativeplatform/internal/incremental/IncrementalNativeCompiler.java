@@ -16,6 +16,7 @@
 package org.gradle.language.nativeplatform.internal.incremental;
 
 import org.gradle.api.NonNullApi;
+import org.gradle.api.internal.Stats;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.WorkResults;
@@ -42,12 +43,17 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
     public WorkResult execute(final T spec) {
         spec.setSourceFileIncludeDirectives(incrementalCompilation.getSourceFileIncludeDirectives());
 
+        long startNs = System.nanoTime();
+
         WorkResult workResult;
         if (spec.isIncrementalCompile()) {
             workResult = doIncrementalCompile(incrementalCompilation, spec);
         } else {
             workResult = doCleanIncrementalCompile(spec);
         }
+
+        long endNs = System.nanoTime();
+        Stats.compileProcessing(null, startNs, endNs);
 
         stateCache.set(incrementalCompilation.getFinalState());
 

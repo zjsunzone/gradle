@@ -151,11 +151,7 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
         Compiler<T> baseCompiler = platformToolProvider.newCompiler(specType);
         Compiler<T> incrementalCompiler = getIncrementalCompilerBuilder().createIncrementalCompiler(this, baseCompiler, headerDependencies.incrementalCompilation, headerDependencies.compileStateCache);
         Compiler<T> loggingCompiler = BuildOperationLoggingCompilerDecorator.wrap(incrementalCompiler);
-        long startNs = System.nanoTime();
-        WorkResult result = loggingCompiler.execute(spec);
-        long endNs = System.nanoTime();
-        Stats.compileProcessing(getPath(), startNs, endNs);
-        return result;
+        return loggingCompiler.execute(spec);
     }
 
     protected abstract NativeCompileSpec createCompileSpec();
