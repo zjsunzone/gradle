@@ -134,6 +134,7 @@ public class IncrementalCompileFilesFactory {
             visibleMacros.append(file, fileDetails.directives);
 
             IncludeFileResolutionResult result = IncludeFileResolutionResult.NoMacroIncludes;
+            /*
             for (Include include : fileDetails.directives.getAll()) {
                 if (include.getType() == IncludeType.MACRO && result == IncludeFileResolutionResult.NoMacroIncludes) {
                     result = IncludeFileResolutionResult.HasMacroIncludes;
@@ -155,7 +156,7 @@ public class IncrementalCompileFilesFactory {
                     includeVisitResult.collectDependencies(includedFileStates, includedFileDirectives);
                 }
             }
-
+            */
             FileVisitResult visitResult = new FileVisitResult(file, result, fileDetails.state, fileDetails.directives, includedFileStates, includedFileDirectives);
             if (result == IncludeFileResolutionResult.NoMacroIncludes) {
                 // No macro includes were seen in the include graph of this file, so the result can be reused if this file is seen again
