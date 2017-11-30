@@ -18,6 +18,7 @@ package org.gradle.language.nativeplatform.internal.incremental;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.EmptyFileVisitor;
 import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.internal.Stats;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.changedetection.changes.DiscoveredInputRecorder;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
@@ -68,18 +69,25 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
         PersistentStateCache<CompilationState> compileStateCache = compilationStateCacheFactory.create(task.getPath());
         DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, importsAreIncludes);
         IncrementalCompileProcessor processor = createProcessor(compileStateCache, sourceIncludesParser, spec.getIncludeRoots());
+
+        long startNs = System.nanoTime();
         IncrementalCompilation compilation = processor.processSourceFiles(spec.getSourceFiles());
+        long endNs = System.nanoTime();
+        Stats.analysis(getTask().getPath(), startNs, endNs);
 
         spec.setSourceFileIncludeDirectives(mapIncludes(spec.getSourceFiles(), compilation.getFinalState()));
 
         handleDiscoveredInputs(spec, compilation, spec.getDiscoveredInputRecorder());
 
+        startNs = System.nanoTime();
         WorkResult workResult;
         if (spec.isIncrementalCompile()) {
             workResult = doIncrementalCompile(compilation, spec);
         } else {
             workResult = doCleanIncrementalCompile(spec);
         }
+        endNs = System.nanoTime();
+        Stats.compileProcessing(getTask().getPath(), startNs, endNs);
 
         compileStateCache.set(compilation.getFinalState());
 
