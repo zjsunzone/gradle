@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +103,18 @@ public class IncrementalCompileProcessor {
             } else {
                 includeDirectives = previousState.getIncludeDirectives();
             }
-            SourceIncludesResolver.ResolvedSourceIncludes resolutionResult = resolveIncludes(file, includeDirectives);
+//            SourceIncludesResolver.ResolvedSourceIncludes resolutionResult = resolveIncludes(file, includeDirectives);
+            SourceIncludesResolver.ResolvedSourceIncludes resolutionResult = new SourceIncludesResolver.ResolvedSourceIncludes() {
+                @Override
+                public Set<ResolvedInclude> getResolvedIncludes() {
+                    return Collections.emptySet();
+                }
+
+                @Override
+                public Set<File> getCheckedLocations() {
+                    return Collections.emptySet();
+                }
+            };
 
             CompilationFileState newState = new CompilationFileState(newHash, includeDirectives, ImmutableSet.copyOf(resolutionResult.getResolvedIncludes()));
 
