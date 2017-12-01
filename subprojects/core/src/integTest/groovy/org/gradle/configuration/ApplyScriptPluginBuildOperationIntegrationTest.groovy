@@ -83,6 +83,30 @@ class ApplyScriptPluginBuildOperationIntegrationTest extends AbstractIntegration
         operations.search(ops[2], ApplyScriptPluginBuildOperationType).size() == 0
     }
 
+    def "captures settings script events of included builds"() {
+        given:
+        def includedBuildSettings = file("otherBuild/settings.gradle") << "rootProject.name = 'other'"
+//        includedBuildSettings = file("otherBuild/settings.gradle") << "rootProject.name = 'other'"
+        file("otherBuild/build.gradle") << "apply plugin:'java'"
+        settingsFile << """
+        includeBuild "otherBuild"
+        """
+
+        when:
+        succeeds "help"
+
+        then:
+        def ops = operations.all(ApplyScriptPluginBuildOperationType) {
+            it.details.targetType == "settings"
+        }
+        ops.size() == 2
+
+        ops[0].details.file == includedBuildSettings.absolutePath
+        ops[0].details.buildPath == ':otherBuild'
+        ops[1].details.buildPath == ':'
+        ops[1].details.file == settingsFile.absolutePath
+    }
+
     def "captures project script events"() {
         given:
         def otherScript2 = file("script2.gradle") << ""
