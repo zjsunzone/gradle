@@ -168,7 +168,7 @@ public class CppBasePlugin implements Plugin<ProjectInternal> {
 
             private void configureCompile(CppCompile compile, CppBinary binary, DefaultNativePlatform currentPlatform, NativeToolChain toolChain, Callable<List<File>> systemIncludes) {
                 compile.includes(binary.getCompileIncludePath());
-                compile.includes(systemIncludes);
+//                compile.includes(systemIncludes);
                 compile.source(binary.getCppSource());
                 if (binary.isDebuggable()) {
                     compile.setDebuggable(true);
