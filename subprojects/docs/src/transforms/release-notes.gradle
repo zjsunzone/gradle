@@ -29,7 +29,8 @@ transformDocument {
     head().
             append("<meta charset='utf-8'>").
             append("<meta name='viewport' content='width=device-width, initial-scale=1'>").
-            append("<title>Gradle @version@ Release Notes</title>")
+            append("<title>Gradle @version@ Release Notes</title>").
+            append("<link href='https://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet'/>")
 
     head().append("<style>p{}</style>").children().last().childNode(0).attr("data", baseStyleFile.text + releaseNotesStyleFile.text)
 
