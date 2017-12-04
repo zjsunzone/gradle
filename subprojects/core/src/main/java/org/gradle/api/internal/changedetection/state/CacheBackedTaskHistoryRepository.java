@@ -37,6 +37,7 @@ import org.gradle.api.internal.tasks.GenericFileNormalizer;
 import org.gradle.api.internal.tasks.TaskFilePropertySpec;
 import org.gradle.api.internal.tasks.TaskOutputFilePropertySpec;
 import org.gradle.cache.PersistentIndexedCache;
+import org.gradle.internal.FileUtils;
 import org.gradle.internal.classloader.ClassLoaderHierarchyHasher;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.hash.HashCode;
@@ -284,7 +285,16 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
             return true;
         }
         // Did we already consider it as an output after the previous execution?
-        return afterPreviousSnapshots.containsKey(path);
+        if (afterPreviousSnapshots.containsKey(path)) {
+            return true;
+        }
+        // Did we consider it an output before and only a symlink changed?
+        for (String previousPath : afterPreviousSnapshots.keySet()) {
+            if (FileUtils.canonicalize(new File(previousPath)).getAbsolutePath().equals(path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ImmutableList<ImplementationSnapshot> collectActionImplementations(Collection<ContextAwareTaskAction> taskActions, ClassLoaderHierarchyHasher classLoaderHierarchyHasher) {

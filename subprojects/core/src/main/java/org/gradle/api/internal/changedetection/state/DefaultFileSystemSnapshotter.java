@@ -35,6 +35,7 @@ import org.gradle.cache.internal.ProducerGuard;
 import org.gradle.caching.internal.BuildCacheHasher;
 import org.gradle.caching.internal.DefaultBuildCacheHasher;
 import org.gradle.internal.Factory;
+import org.gradle.internal.FileUtils;
 import org.gradle.internal.file.FileMetadataSnapshot;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.HashCode;
@@ -79,7 +80,7 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
     @Override
     public FileSnapshot snapshotSelf(final File file) {
         // Could potentially coordinate with a thread that is snapshotting an overlapping directory tree
-        final String path = file.getAbsolutePath();
+        final String path = getCacheLookupPath(file);
         return producingSelfSnapshots.guardByKey(path, new Factory<FileSnapshot>() {
             @Override
             public FileSnapshot create() {
@@ -93,10 +94,14 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
         });
     }
 
+    private String getCacheLookupPath(File file) {
+        return FileUtils.canonicalize(file).getAbsolutePath();
+    }
+
     @Override
     public Snapshot snapshotAll(final File file) {
         // Could potentially coordinate with a thread that is snapshotting an overlapping directory tree
-        final String path = file.getAbsolutePath();
+        final String path = getCacheLookupPath(file);
         return producingAllSnapshots.guardByKey(path, new Factory<Snapshot>() {
             @Override
             public Snapshot create() {
@@ -118,7 +123,7 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
     @Override
     public FileTreeSnapshot snapshotDirectoryTree(final File dir) {
         // Could potentially coordinate with a thread that is snapshotting an overlapping directory tree
-        final String path = dir.getAbsolutePath();
+        final String path = getCacheLookupPath(dir);
         FileTreeSnapshot snapshot = fileSystemMirror.getDirectoryTree(path);
         if (snapshot != null) {
             return snapshot;
@@ -146,7 +151,7 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
     @Override
     public FileTreeSnapshot snapshotDirectoryTree(final DirectoryFileTree dirTree) {
         // Could potentially coordinate with a thread that is snapshotting an overlapping directory tree
-        final String path = dirTree.getDir().getAbsolutePath();
+        final String path = getCacheLookupPath(dirTree.getDir());
         final PatternSet patterns = dirTree.getPatterns();
 
         FileTreeSnapshot snapshot = fileSystemMirror.getDirectoryTree(path);
@@ -212,7 +217,7 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
     }
 
     private String internPath(File file) {
-        return stringInterner.intern(file.getAbsolutePath());
+        return stringInterner.intern(getCacheLookupPath(file));
     }
 
     private FileSnapshot calculateDetails(File file) {

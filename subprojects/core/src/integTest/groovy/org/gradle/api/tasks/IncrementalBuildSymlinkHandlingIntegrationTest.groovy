@@ -152,8 +152,7 @@ task work {
         run("work")
 
         then:
-        // TODO - should not be skipped
-        result.assertTasksSkipped(":work")
+        result.assertTaskNotSkipped(":work")
 
         when:
         run("work")
@@ -222,8 +221,7 @@ task work {
         run("work")
 
         then:
-        // TODO - should not be skipped
-        result.assertTasksSkipped(":work")
+        result.assertTaskNotSkipped(":work")
 
         when:
         run("work")
