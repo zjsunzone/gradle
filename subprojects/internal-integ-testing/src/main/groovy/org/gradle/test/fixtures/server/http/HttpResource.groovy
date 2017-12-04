@@ -49,8 +49,8 @@ abstract class HttpResource extends AbstractHttpResource {
         server.expectGetUnauthorized(getPath())
     }
 
-    void expectGetBlocking() {
-        server.expectGetBlocking(getPath())
+    void expectGetBlocking(int seconds = 60) {
+        server.expectGet(getPath(), file, seconds)
     }
 
     void expectGetMissing(PasswordCredentials credentials = null) {
